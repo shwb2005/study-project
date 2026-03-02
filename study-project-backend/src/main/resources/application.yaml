@@ -1,25 +1,33 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost/study?useUnicode=true&CharacterEncoding=utf-8
+    url: jdbc:mysql://localhost/study?useUnicode=true&characterEncoding=utf-8
     username: root
     password: 55668899shang..
   mail:
-    host: smtp.163.com  # 163邮箱SMTP服务器
-    username: 13736393394@163.com  # 你的163邮箱地址
-    password: JKTMw6ea5YhqjjMH  # 163邮箱的SMTP密码或授权码
-    protocol: smtp
+    host: smtp.163.com
+    port: 465  # 163邮箱的标准SSL端口
+    username: 13736393394@163.com
+    password: JKTMw6ea5YhqjjMH  # 请确认这是SMTP授权码而非邮箱密码
+    protocol: smtps  # 使用smtps协议
     default-encoding: UTF-8
     properties:
       mail:
         smtp:
           auth: true
-          starttls:
-            enable: true
-            required: true
           ssl:
             enable: true
-      from: 13736393394@163.com
+          starttls:
+            enable: false
+          proxy:
+            host:
+            port:
+          socks:
+            host:
+            port:
+        transport:
+          protocol: smtp
+        debug: true
   data:
     redis:
       host: localhost
@@ -30,3 +38,7 @@ spring:
           max-active: 8
           max-idle: 8
           min-idle: 0
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+    default-property-inclusion: non_null

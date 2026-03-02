@@ -1,8 +1,9 @@
 package com.example.service.impl;
 
-import com.example.entity.Account;
+import com.example.entity.auth.Account;
 import com.example.mapper.UserMapper;
 import com.example.service.AuthorizeService;
+import com.example.service.UserProfileService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -14,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.Random;
@@ -27,6 +29,9 @@ public class AuthorizeServiceImpl implements AuthorizeService {
 
     @Resource
     UserMapper mapper;
+
+    @Resource // 新增：注入 UserProfileService
+    private UserProfileService userProfileService;
 
     @Resource
     MailSender mailSender;
@@ -63,16 +68,18 @@ public class AuthorizeServiceImpl implements AuthorizeService {
      */
 
     @Override
-    public String sendValidateEmail(String email, String sessionId) {
-        String key = "email:" +sessionId + ":" +email;
+    public String sendValidateEmail(String email, String sessionId,boolean hasAccount) {
+        String key = "email:" +sessionId + ":" +email+":"+hasAccount;
         if(Boolean.TRUE.equals(template.hasKey(key))) {
             Long expire = Optional.ofNullable(template.getExpire(key, TimeUnit.SECONDS)).orElse(0L);
             if(expire > 120)
                 return "请求频繁，请稍后再试";
         }
-        if(mapper.findAccountByUsername(email)!=null){
-                return "邮箱已被注册";
-        }
+        Account account = mapper.findAccountByUsername(email);
+        if(hasAccount && account == null)
+            return "没有此邮件地址账户";
+        if(!hasAccount && account != null)
+            return "此邮箱已被注册";
         Random random = new Random();
         int code = random.nextInt(900000)+100000;
         SimpleMailMessage message = new SimpleMailMessage();
@@ -92,24 +99,84 @@ public class AuthorizeServiceImpl implements AuthorizeService {
     }
 
     @Override
+    @Transactional
     public String validateAndRegister(String username, String password, String email, String code, String sessionId){
-        String key = "email:" +sessionId + ":" +email;
+        String key = "email:" + sessionId + ":" + email + ":false";
+        if(Boolean.TRUE.equals(template.hasKey(key))) {
+            String s = template.opsForValue().get(key);
+            if(s == null) return "验证码失败，请重新请求";
+            if(s.equals(code)){
+                password = encoder.encode(password);
+
+                try {
+                    // 创建 Account 对象
+                    Account account = new Account();
+                    account.setUsername(username);
+                    account.setPassword(password);
+                    account.setEmail(email);
+
+                    // 插入用户账号
+                    int result = mapper.createAccount(account);
+
+                    if(result > 0){
+                        // 获取新用户的ID
+                        Integer newUserId = account.getId();
+                        System.out.println("=== 新用户注册成功，用户ID: " + newUserId + " ===");
+
+                        if (newUserId != null) {
+                            // 【关键】初始化用户档案
+                            boolean profileInitialized = userProfileService.initializeUserProfile(newUserId);
+                            System.out.println("用户档案初始化结果: " + profileInitialized);
+
+                            if (profileInitialized) {
+                                System.out.println("✅ 用户档案创建成功");
+                            } else {
+                                System.out.println("❌ 用户档案创建失败");
+                                // 这里可以记录日志，但不回滚事务，因为用户注册主要功能已完成
+                            }
+
+                            // 删除Redis中的验证码
+                            template.delete(key);
+                            return null;
+                        } else {
+                            System.out.println("错误：无法获取新用户的ID");
+                            return "注册失败，无法获取用户ID";
+                        }
+                    } else {
+                        return "内部错误，联系管理员";
+                    }
+                } catch (Exception e) {
+                    System.out.println("注册异常: " + e.getMessage());
+                    e.printStackTrace();
+                    return "注册失败，请联系管理员";
+                }
+            } else {
+                return "验证码错误";
+            }
+        } else {
+            return "请先获取验证码";
+        }
+    }
+    @Override
+    public String validateOnly(String email, String code, String sessionId) {
+        String key = "email:" +sessionId + ":" +email+":true";
         if(Boolean.TRUE.equals(template.hasKey(key))) {
             String s = template.opsForValue().get(key);
             if(s == null ) return "验证码失败，请重新请求";
             if(s.equals(code)){
-                password = encoder.encode(password);
-                if(mapper.createAccount(username,password,email)>0){
-                    return null;
-                }else {
-                    return "内部错误请，联系管理员";
-                }
+              return null;
             }else{
                 return "验证码错误";
             }
         }else{
             return "请求获取验证码";
         }
-
     }
+
+    @Override
+    public boolean resetPassword(String password, String email) {
+        password = encoder.encode(password);
+        return mapper.resetPassword(password,email)>0;
+    }
+
 }

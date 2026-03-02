@@ -39,18 +39,29 @@ public class RestBean<T> {
     }
 
     public static <T> RestBean<T> success() {
-        return new RestBean<>(200,true,null);
+        return new RestBean<>(200, true, null);
     }
 
     public static <T> RestBean<T> success(T data) {
-        return new RestBean<>(200,true,data);
+        return new RestBean<>(200, true, data);
     }
 
     public static <T> RestBean<T> failure(int status) {
-        return new RestBean<>(status,false,null);
+        return new RestBean<>(status, false, null);
     }
 
+    // 修复这个方法的泛型问题
     public static <T> RestBean<T> failure(int status, T data) {
-        return new RestBean<>(status,false,data);
+        return new RestBean<>(status, false, data);
+    }
+
+    // 添加一个专门处理字符串错误消息的方法
+    public static RestBean<String> failure(int status, String errorMessage) {
+        return new RestBean<>(status, false, errorMessage);
+    }
+
+    // 添加一个处理任意类型错误数据的方法
+    public static <E> RestBean<E> failureWithData(int status, E data) {
+        return new RestBean<>(status, false, data);
     }
 }

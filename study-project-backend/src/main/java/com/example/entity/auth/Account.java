@@ -1,4 +1,4 @@
-package com.example.entity;
+package com.example.entity.auth;
 
 import lombok.Data;
 
@@ -49,5 +49,8 @@ public class Account {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setAdmin(boolean b) {
     }
 }
