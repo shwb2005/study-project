@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { get, post } from "@/net"
+import { get } from "@/net"
 import { ElMessage } from "element-plus"
 import { useStore } from "@/stores"
 import axios from 'axios'
@@ -13,24 +13,14 @@ const loading = ref(false)
 const myCourses = ref([])
 const logs = ref([])
 
-// 初始化个人资料数据结构
 const initProfile = () => ({
-  id: '',
-  realName: '',
-  phone: '',
-  gender: '',
-  birthday: '',
-  bio: '',
-  avatar: '/avatars/default.png',
-  lastLoginTime: '',
-  created_at: '',
-  updated_at: ''
+  id: '', realName: '', phone: '', gender: '',
+  birthday: '', bio: '', avatar: '/avatars/default.png',
+  lastLoginTime: '', created_at: '', updated_at: ''
 })
 
-// 处理后端返回的数据 - 将下划线字段转为驼峰
 const processProfileData = (data) => {
   if (!data) return initProfile()
-
   return {
     id: data.id || '',
     realName: data.real_name || data.realName || '',
@@ -46,133 +36,33 @@ const processProfileData = (data) => {
   }
 }
 
-// 加载个人资料
 const loadProfile = () => {
-  console.log('开始加载个人资料...')
   get('/api/profile', data => {
-    console.log('个人资料API返回数据:', data)
     profile.value = processProfileData(data)
-
-    // 处理性别字段映射
-    if (profile.value.gender) {
-      profile.value.gender = profile.value.gender.toUpperCase()
-    }
-
-    console.log('处理后的个人资料数据:', profile.value)
-  }, error => {
-    console.error('加载个人资料失败:', error)
-    profile.value = initProfile()
-  })
+    if (profile.value.gender) profile.value.gender = profile.value.gender.toUpperCase()
+  }, () => { profile.value = initProfile() })
 }
 
-// 加载我的课程数据
 const loadMyCourses = () => {
-  console.log('开始加载我的课程...')
   get('/api/course/my-courses', data => {
-    console.log('我的课程API返回数据:', data)
-    if (data && Array.isArray(data)) {
-      myCourses.value = data
-      // 调试：打印每个课程的签到信息
-      myCourses.value.forEach((course, index) => {
-        console.log(`课程 ${index + 1}:`, {
-          name: course.course_name || course.name,
-          sign_in_count: course.sign_in_count,
-          check_in_count: course.check_in_count,
-          sign_count: course.sign_count,
-          attendance_count: course.attendance_count,
-          all_fields: Object.keys(course) // 显示所有可用字段
-        })
-      })
-    } else {
-      myCourses.value = []
-    }
-    console.log('设置的我的课程数据:', myCourses.value)
-  }, error => {
-    console.error('加载我的课程失败:', error)
-    myCourses.value = []
-  })
+    myCourses.value = (data && Array.isArray(data)) ? data : []
+  }, () => { myCourses.value = [] })
 }
 
-// 加载日志数据 - 使用模拟数据
 const loadLogs = () => {
-  console.log('加载模拟日志数据...')
-  // 模拟日志数据 - 最多5条
-  const mockLogs = [
-    { id: 1, action: '登录系统', time: new Date().toISOString(), ip: '192.168.1.100' },
-    { id: 2, action: '查看个人资料', time: new Date(Date.now() - 30 * 60 * 1000).toISOString(), ip: '192.168.1.100' },
-    { id: 3, action: '更新个人信息', time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), ip: '192.168.1.100' },
-    { id: 4, action: '浏览课程', time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), ip: '192.168.1.100' },
-    { id: 5, action: '课程签到', time: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), ip: '192.168.1.100' }
+  logs.value = [
+    { id: 1, action: '登录系统', time: new Date().toISOString() },
+    { id: 2, action: '查看个人资料', time: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+    { id: 3, action: '更新个人信息', time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+    { id: 4, action: '浏览课程', time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
+    { id: 5, action: '课程签到', time: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString() }
   ]
-
-  logs.value = mockLogs.slice(0, 5) // 确保最多5条
-  console.log('模拟日志数据已加载 (最多5条):', logs.value)
 }
 
-// 手动测试签到功能
-const testSignIn = () => {
-  console.log('=== 手动测试签到功能 ===')
-  console.log('当前课程数据:', myCourses.value)
-
-  // 尝试多种可能的签到字段
-  myCourses.value.forEach((course, index) => {
-    const possibleFields = [
-      'sign_in_count', 'check_in_count', 'sign_count',
-      'attendance_count', 'signInCount', 'checkInCount'
-    ]
-
-    console.log(`课程 ${index + 1} "${course.course_name || course.name}" 的签到字段:`)
-    possibleFields.forEach(field => {
-      if (course[field] !== undefined) {
-        console.log(`  ${field}:`, course[field])
-      }
-    })
-  })
-
-  ElMessage.info('请在控制台查看签到字段调试信息')
-}
-
-// 日志调试功能
-const debugLogs = () => {
-  console.log('=== 日志调试信息 ===')
-  console.log('当前日志数量:', logs.value.length)
-  console.log('日志数据详情:', logs.value)
-
-  // 添加一条测试日志
-  const testLog = {
-    id: Date.now(),
-    action: '调试操作',
-    time: new Date().toISOString(),
-    ip: '127.0.0.1'
-  }
-
-  // 添加到开头，并保持最多5条
-  logs.value.unshift(testLog)
-  if (logs.value.length > 5) {
-    logs.value = logs.value.slice(0, 5)
-  }
-
-  console.log('添加测试日志后的日志数据:', logs.value)
-  ElMessage.success('已添加测试日志，请在控制台查看详情')
-}
-
-// 清空日志
-const clearLogs = () => {
-  logs.value = []
-  ElMessage.info('日志已清空')
-}
-
-// 更新个人资料
 const updateProfile = () => {
-  console.log('=== 更新个人资料 ===')
-
-  // 表单验证
   if (profile.value.phone && !/^1[3-9]\d{9}$/.test(profile.value.phone)) {
-    ElMessage.error('请输入正确的手机号码')
-    return
+    ElMessage.error('请输入正确的手机号码'); return
   }
-
-  // 同时发送驼峰和下划线两种字段名
   const submitData = {
     realName: profile.value.realName || '',
     real_name: profile.value.realName || '',
@@ -181,521 +71,419 @@ const updateProfile = () => {
     birthday: profile.value.birthday || '',
     bio: profile.value.bio || ''
   }
-
-  console.log('提交的数据:', submitData)
   loading.value = true
-
   axios.post('/api/profile', submitData, {
-    headers: { 'Content-Type': 'application/json' },
-    withCredentials: true
+    headers: { 'Content-Type': 'application/json' }, withCredentials: true
   }).then(({ data }) => {
     if (data.success) {
-      console.log('✅ 更新成功:', data.message)
-      ElMessage.success(data.message)
-      loadProfile()
-      // 添加更新日志 - 保持最多5条
-      const newLog = {
-        id: Date.now(),
-        action: '更新个人资料',
-        time: new Date().toISOString(),
-        ip: '192.168.1.100'
-      }
-      logs.value.unshift(newLog)
-      if (logs.value.length > 5) {
-        logs.value = logs.value.slice(0, 5)
-      }
-    } else {
-      console.error('❌ 更新失败:', data.message)
-      ElMessage.error(data.message || '更新失败')
-    }
+      ElMessage.success(data.message); loadProfile()
+      logs.value.unshift({ id: Date.now(), action: '更新个人资料', time: new Date().toISOString() })
+      if (logs.value.length > 5) logs.value = logs.value.slice(0, 5)
+    } else { ElMessage.error(data.message || '更新失败') }
     loading.value = false
-  }).catch(error => {
-    console.error('❌ 请求错误:', error)
-    ElMessage.error('网络错误，请稍后重试')
-    loading.value = false
-  })
+  }).catch(() => { ElMessage.error('网络错误，请稍后重试'); loading.value = false })
 }
 
-// 重置表单
-const resetForm = () => {
-  loadProfile()
-}
+const resetForm = () => { loadProfile() }
 
-// 格式化日期
-const formatDate = (dateString) => {
-  if (!dateString) return '--'
+const formatDate = (s) => {
+  if (!s) return '--'
+  try { return new Date(s).toLocaleDateString('zh-CN') } catch { return s }
+}
+const formatRelTime = (s) => {
+  if (!s) return '--'
   try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('zh-CN')
-  } catch {
-    return dateString
-  }
+    const m = Math.floor((Date.now() - new Date(s).getTime()) / 60000)
+    if (m < 1) return '刚刚'
+    if (m < 60) return `${m} 分钟前`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h} 小时前`
+    return `${Math.floor(h / 24)} 天前`
+  } catch { return s }
 }
 
-// 格式化日期时间
-const formatDateTime = (dateString) => {
-  if (!dateString) return '--'
-  try {
-    const date = new Date(dateString)
-    return date.toLocaleString('zh-CN')
-  } catch {
-    return dateString
-  }
-}
-
-// 计算属性
 const myCoursesCount = computed(() => myCourses.value.length)
-
-// 所有课程签到次数总和 - 增强调试功能
 const totalCheckInCount = computed(() => {
   let total = 0
-  let foundFields = []
-
-  myCourses.value.forEach((course, index) => {
-    // 尝试多种可能的字段名
-    const possibleFields = [
-      'sign_in_count', 'check_in_count', 'sign_count',
-      'attendance_count', 'signInCount', 'checkInCount'
-    ]
-
-    let courseSignCount = 0
-    let usedField = null
-
-    for (const field of possibleFields) {
-      if (course[field] !== undefined && course[field] !== null) {
-        courseSignCount = parseInt(course[field]) || 0
-        usedField = field
-        foundFields.push({ course: course.course_name || course.name, field, value: courseSignCount })
-        break
-      }
-    }
-
-    total += courseSignCount
-
-    if (usedField) {
-      console.log(`课程 ${index + 1} "${course.course_name || course.name}" 使用字段 "${usedField}": ${courseSignCount}`)
-    } else {
-      console.log(`课程 ${index + 1} "${course.course_name || course.name}" 未找到签到字段`)
+  myCourses.value.forEach(course => {
+    const fields = ['sign_in_count','check_in_count','sign_count','attendance_count','signInCount','checkInCount']
+    for (const f of fields) {
+      if (course[f] != null) { total += parseInt(course[f]) || 0; break }
     }
   })
-
-  console.log('总签到次数计算完成:', total)
-  console.log('找到的签到字段:', foundFields)
-
   return total
 })
 
+const scrollBlur = ref(0)
+const scrollOverlay = ref(0)
+
+const handleScroll = () => {
+  const progress = Math.min(window.scrollY / 380, 1)
+  scrollBlur.value = progress * 48
+  scrollOverlay.value = progress * 0.52
+}
+
 onMounted(() => {
-  console.log('个人中心页面已加载')
-  loadProfile()
-  loadMyCourses()
-  loadLogs()
+  loadProfile(); loadMyCourses(); loadLogs()
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
 <template>
-  <div class="profile-page">
-    <div class="header">
-      <div class="header-left">
-        <el-button @click="router.push('/index')" type="text" icon="el-icon-back">
-          返回首页
-        </el-button>
-        <h1>个人中心</h1>
+  <div class="page">
+
+    <!-- Background layers -->
+    <div class="bg"></div>
+    <div class="bg-dim" :style="{ backdropFilter: `blur(${scrollBlur}px) saturate(140%)`, WebkitBackdropFilter: `blur(${scrollBlur}px) saturate(140%)`, background: `rgba(240,246,252,${scrollOverlay})` }"></div>
+
+    <!-- Navbar -->
+    <header class="navbar">
+      <button class="nav-btn" @click="router.push('/index')">
+        <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
+          <path d="M8 1L1 8L8 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        返回
+      </button>
+      <span class="navbar-title">个人中心</span>
+      <button class="nav-btn" @click="router.push('/courses')">课程中心</button>
+    </header>
+
+    <main class="main">
+
+      <!-- Identity -->
+      <section class="identity">
+        <div class="avatar">
+          <img :src="profile.avatar" class="avatar-img" onerror="this.style.display='none'" />
+          <span class="avatar-letter">{{ profile.realName ? profile.realName.charAt(0) : 'U' }}</span>
+        </div>
+        <h1 class="name">{{ profile.realName || '未设置姓名' }}</h1>
+        <p class="bio">{{ profile.bio || '暂无个人简介' }}</p>
+        <div class="meta" v-if="profile.id || profile.phone">
+          <span v-if="profile.id">ID {{ profile.id }}</span>
+          <span class="dot" v-if="profile.id && profile.phone">·</span>
+          <span v-if="profile.phone">{{ profile.phone }}</span>
+        </div>
+      </section>
+
+      <!-- Stats -->
+      <div class="glass-card stats-row">
+        <div class="stat">
+          <span class="stat-n">{{ myCoursesCount }}</span>
+          <span class="stat-l">在学课程</span>
+        </div>
+        <div class="vline"></div>
+        <div class="stat">
+          <span class="stat-n">{{ totalCheckInCount }}</span>
+          <span class="stat-l">签到次数</span>
+        </div>
       </div>
-      <div class="header-right">
-        <el-button @click="router.push('/courses')" type="primary" plain>
-          课程中心
-        </el-button>
-      </div>
-    </div>
 
-    <div class="profile-content">
-      <!-- 用户信息卡片 -->
-      <el-card class="user-card" shadow="never">
-        <div class="user-header">
-          <div class="avatar-section">
-            <el-avatar :size="80" :src="profile.avatar" class="user-avatar">
-              {{ profile.realName ? profile.realName.charAt(0) : 'U' }}
-            </el-avatar>
-          </div>
-          <div class="user-info">
-            <h2 class="user-name">{{ profile.realName || '未设置姓名' }}</h2>
-            <p class="user-bio">{{ profile.bio || '暂无个人简介' }}</p>
-            <div class="user-meta">
-              <span class="meta-item">
-                <i class="el-icon-user"></i>
-                ID: {{ profile.id || '--' }}
-              </span>
-              <span class="meta-item" v-if="profile.phone">
-                <i class="el-icon-phone"></i>
-                {{ profile.phone }}
-              </span>
-            </div>
+      <!-- Edit profile -->
+      <section class="glass-card">
+        <h2 class="sec-title">编辑资料</h2>
+
+        <div class="field">
+          <label class="flbl">真实姓名</label>
+          <input class="fin" v-model="profile.realName" placeholder="请输入真实姓名" maxlength="20" />
+        </div>
+        <div class="field">
+          <label class="flbl">手机号码</label>
+          <input class="fin" v-model="profile.phone" placeholder="请输入手机号码" maxlength="11" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label class="flbl">性别</label>
+          <div class="seg">
+            <label class="seg-opt" :class="{ on: profile.gender === 'MALE' }"><input type="radio" v-model="profile.gender" value="MALE" hidden />男</label>
+            <label class="seg-opt" :class="{ on: profile.gender === 'FEMALE' }"><input type="radio" v-model="profile.gender" value="FEMALE" hidden />女</label>
+            <label class="seg-opt" :class="{ on: profile.gender === 'OTHER' }"><input type="radio" v-model="profile.gender" value="OTHER" hidden />其他</label>
           </div>
         </div>
-      </el-card>
-
-      <!-- 编辑资料卡片 -->
-      <el-card class="profile-card" shadow="never">
-        <template #header>
-          <div class="card-header">
-            <span>编辑资料</span>
-          </div>
-        </template>
-
-        <el-form :model="profile" label-width="100px">
-          <el-form-item label="真实姓名">
-            <el-input
-                v-model="profile.realName"
-                placeholder="请输入真实姓名"
-                maxlength="20"
-                clearable
-            />
-          </el-form-item>
-
-          <el-form-item label="手机号码">
-            <el-input
-                v-model="profile.phone"
-                placeholder="请输入手机号码"
-                maxlength="11"
-                clearable
-            />
-          </el-form-item>
-
-          <el-form-item label="性别">
-            <el-radio-group v-model="profile.gender">
-              <el-radio label="MALE">男</el-radio>
-              <el-radio label="FEMALE">女</el-radio>
-              <el-radio label="OTHER">其他</el-radio>
-            </el-radio-group>
-          </el-form-item>
-
-          <el-form-item label="生日">
-            <el-date-picker
-                v-model="profile.birthday"
-                type="date"
-                placeholder="选择生日"
-                value-format="YYYY-MM-DD"
-                style="width: 100%"
-            />
-          </el-form-item>
-
-          <el-form-item label="个人简介">
-            <el-input
-                v-model="profile.bio"
-                type="textarea"
-                :rows="3"
-                placeholder="请输入个人简介"
-                maxlength="200"
-                show-word-limit
-            />
-          </el-form-item>
-
-          <el-form-item>
-            <el-button
-                type="primary"
-                @click="updateProfile"
-                :loading="loading"
-            >
-              保存修改
-            </el-button>
-          </el-form-item>
-        </el-form>
-      </el-card>
-
-      <!-- 学习统计 -->
-      <el-card class="stats-card" shadow="never">
-        <template #header>
-          <div class="card-header">
-            <span>学习统计</span>
-          </div>
-        </template>
-
-        <div class="stats-grid">
-          <div class="stat-item">
-            <div class="stat-value">{{ myCoursesCount }}</div>
-            <div class="stat-label">在学课程</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value">{{ totalCheckInCount }}</div>
-            <div class="stat-label">签到次数</div>
-          </div>
+        <div class="field">
+          <label class="flbl">生日</label>
+          <input class="fin" v-model="profile.birthday" type="date" />
         </div>
-        <div class="stats-debug" v-if="totalCheckInCount === 0">
-          <el-alert title="签到次数为0，请点击右上角'调试签到'按钮查看详细字段信息" type="warning" show-icon :closable="false" />
+        <div class="field">
+          <label class="flbl">个人简介</label>
+          <textarea class="fta" v-model="profile.bio" placeholder="请输入个人简介" maxlength="200" rows="3"></textarea>
+          <span class="wc">{{ (profile.bio || '').length }}/200</span>
         </div>
-      </el-card>
 
-
-      <!-- 账户信息 -->
-      <el-card class="account-card" shadow="never">
-        <template #header>
-          <div class="card-header">
-            <span>账户信息</span>
-          </div>
-        </template>
-
-        <div class="account-info">
-          <div class="info-item">
-            <span class="label">用户名:</span>
-            <span class="value">{{ store.auth.user?.username || '--' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">邮箱:</span>
-            <span class="value">{{ store.auth.user?.email || '--' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">上一次登录:</span>
-            <span class="value">{{ formatDate(profile.lastLoginTime) }}</span>
-          </div>
+        <div class="form-footer">
+          <button class="btn-text" @click="resetForm">重置</button>
+          <button class="btn-primary" @click="updateProfile" :disabled="loading">
+            <span v-if="loading" class="spinner"></span>
+            {{ loading ? '保存中…' : '保存修改' }}
+          </button>
         </div>
-      </el-card>
-    </div>
+      </section>
+
+      <!-- Account info -->
+      <section class="glass-card">
+        <h2 class="sec-title">账户信息</h2>
+        <ul class="rows">
+          <li class="row"><span class="rk">用户名</span><span class="rv">{{ store.auth.user?.username || '--' }}</span></li>
+          <li class="row"><span class="rk">邮箱</span><span class="rv">{{ store.auth.user?.email || '--' }}</span></li>
+          <li class="row last"><span class="rk">上次登录</span><span class="rv">{{ formatDate(profile.lastLoginTime) }}</span></li>
+        </ul>
+      </section>
+
+      <!-- Activity -->
+      <section class="glass-card">
+        <h2 class="sec-title">最近动态</h2>
+        <ul class="rows" v-if="logs.length">
+          <li class="row" v-for="(log, i) in logs" :key="log.id" :class="{ last: i === logs.length - 1 }">
+            <span class="pulse-dot"></span>
+            <span class="rk" style="flex:1">{{ log.action }}</span>
+            <span class="rv">{{ formatRelTime(log.time) }}</span>
+          </li>
+        </ul>
+        <p class="empty" v-else>暂无动态</p>
+      </section>
+
+    </main>
   </div>
 </template>
 
 <style scoped>
-.profile-page {
-  padding: 20px;
-  max-width: 800px;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── Page shell ─── */
+.page {
+  min-height: 100vh;
+  position: relative;
+  font-family: -apple-system, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif;
+  color: #1d1d1f;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Background image ─── */
+.bg {
+  position: fixed; inset: 0; z-index: 0;
+  background-image: url('@/assets/images/3.jpeg');
+  background-size: cover;
+  background-position: center 40%;
+  background-repeat: no-repeat;
+}
+
+/* 滚动驱动的动态模糊遮罩 — blur 和透明度由 JS 控制 */
+.bg-dim {
+  position: fixed; inset: 0; z-index: 1;
+  /* 初始无模糊无遮罩，由 :style 绑定动态值 */
+  transition: backdrop-filter 0.1s linear, -webkit-backdrop-filter 0.1s linear, background 0.1s linear;
+}
+
+/* ─── Navbar — frosted glass ─── */
+.navbar {
+  position: sticky; top: 0; z-index: 100;
+  height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: saturate(200%) blur(40px);
+  -webkit-backdrop-filter: saturate(200%) blur(40px);
+  border-bottom: 0.5px solid rgba(255,255,255,0.65);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+.nav-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 15px;
+  color: #0071e3; padding: 0;
+  transition: opacity 0.1s;
+}
+.nav-btn:hover { opacity: 0.7; }
+.navbar-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+
+/* ─── Main ─── */
+.main {
+  position: relative; z-index: 2;
+  max-width: 620px;
   margin: 0 auto;
+  padding: 28px 18px 72px;
+  display: flex; flex-direction: column; gap: 14px;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+/* ─── Glass card ─── */
+.glass-card {
+  border-radius: 20px;
+  padding: 22px 22px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: saturate(200%) blur(40px);
+  -webkit-backdrop-filter: saturate(200%) blur(40px);
+  border: 0.5px solid rgba(255,255,255,0.85);
+  box-shadow:
+      0 2px 32px rgba(0,0,0,0.10),
+      0 0.5px 0 rgba(255,255,255,0.95) inset;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+/* ─── Identity ─── */
+.identity {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 44px 20px 32px;
 }
-
-.header-left h1 {
-  margin: 0;
-  color: #333;
-  font-size: 24px;
+.avatar {
+  position: relative;
+  width: 90px; height: 90px; border-radius: 50%;
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(16px);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; margin-bottom: 18px;
+  border: 1.5px solid rgba(255,255,255,0.85);
+  box-shadow: 0 6px 28px rgba(0,0,0,0.13);
 }
+.avatar-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.avatar-letter { font-size: 36px; font-weight: 300; color: #48484a; letter-spacing: -0.02em; }
 
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.profile-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.user-card, .profile-card, .stats-card, .logs-card, .account-card {
-  border-radius: 8px;
-  border: 1px solid #eaeaea;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  color: #333;
-  font-size: 16px;
-}
-
-.log-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.user-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 10px;
-}
-
-.user-avatar {
-  border: 3px solid #1890ff;
-}
-
-.user-info {
-  flex: 1;
-}
-
-.user-name {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  color: #333;
-  font-weight: 600;
-}
-
-.user-bio {
-  margin: 0 0 12px 0;
-  color: #666;
-  line-height: 1.5;
-}
-
-.user-meta {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #888;
-  font-size: 14px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  margin-bottom: 15px;
-}
-
-.stat-item {
-  padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  border-radius: 8px;
-  text-align: center;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #1890ff;
+.name {
+  font-size: 26px; font-weight: 600; letter-spacing: -0.03em;
+  color: #1d1d1f;
+  text-shadow: 0 1px 8px rgba(255,255,255,0.7);
   margin-bottom: 8px;
 }
+.bio {
+  font-size: 15px; color: #3a3a3c; line-height: 1.55;
+  max-width: 380px; margin-bottom: 10px;
+  text-shadow: 0 1px 4px rgba(255,255,255,0.5);
+}
+.meta { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #6e6e73; }
+.dot { color: #c7c7cc; }
 
-.stat-label {
-  font-size: 14px;
-  color: #666;
+/* ─── Stats ─── */
+.stats-row { display: flex; align-items: center; padding: 20px 0; }
+.stat { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stat-n { font-size: 32px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
+.stat-l { font-size: 12px; color: #6e6e73; }
+.vline { width: 0.5px; height: 36px; background: rgba(0,0,0,0.1); }
+
+/* ─── Section title ─── */
+.sec-title {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  color: #86868b; margin-bottom: 16px;
 }
 
-.stats-debug {
-  margin-top: 10px;
-}
+/* ─── Form ─── */
+.field { margin-bottom: 14px; position: relative; }
+.flbl { display: block; font-size: 12px; color: #6e6e73; margin-bottom: 6px; }
 
-.logs-list {
+.fin {
+  width: 100%; height: 44px;
+  background: rgba(255,255,255,0.48);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 0.5px solid rgba(255,255,255,0.80);
+  border-radius: 10px; padding: 0 13px;
+  font-size: 15px; font-family: inherit; color: #1d1d1f;
+  outline: none; transition: box-shadow 0.15s, background 0.15s;
+  appearance: none; -webkit-appearance: none;
+}
+.fin:focus {
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 0 0 3px rgba(0,113,227,0.22);
+}
+.fin[type="date"] { color-scheme: light; }
+
+.fta {
+  width: 100%;
+  background: rgba(255,255,255,0.48);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 0.5px solid rgba(255,255,255,0.80);
+  border-radius: 10px; padding: 11px 13px;
+  font-size: 15px; font-family: inherit; color: #1d1d1f;
+  outline: none; resize: vertical; min-height: 84px;
+  line-height: 1.55; transition: box-shadow 0.15s, background 0.15s;
+}
+.fta:focus {
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 0 0 3px rgba(0,113,227,0.22);
+}
+.wc { display: block; text-align: right; font-size: 11px; color: #aeaeb2; margin-top: 4px; }
+
+/* Segmented Control */
+.seg {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  background: rgba(255,255,255,0.40);
+  backdrop-filter: blur(20px);
+  border: 0.5px solid rgba(255,255,255,0.72);
+  border-radius: 10px; padding: 3px; gap: 2px;
+}
+.seg-opt {
+  flex: 1; text-align: center; padding: 8px 0;
+  font-size: 14px; color: #3a3a3c; border-radius: 7px;
+  cursor: pointer; transition: all 0.12s;
+  user-select: none; font-family: inherit;
+}
+.seg-opt.on {
+  background: rgba(255,255,255,0.92);
+  color: #1d1d1f; font-weight: 500;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.10);
 }
 
-.log-item {
-  padding: 12px;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  background: #fafafa;
+/* ─── Form footer ─── */
+.form-footer {
+  display: flex; justify-content: flex-end;
+  align-items: center; gap: 20px; margin-top: 8px;
+}
+.btn-text {
+  background: none; border: none; cursor: pointer;
+  font-size: 15px; font-family: inherit;
+  color: #0071e3; padding: 0; transition: opacity 0.1s;
+}
+.btn-text:hover { opacity: 0.7; }
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(0,113,227,0.88);
+  backdrop-filter: blur(8px);
+  color: #fff; border: none;
+  border-radius: 980px; padding: 10px 22px;
+  font-size: 15px; font-family: inherit; font-weight: 500;
+  letter-spacing: -0.01em; cursor: pointer;
+  box-shadow: 0 2px 14px rgba(0,113,227,0.28);
+  transition: background 0.12s, transform 0.1s;
+}
+.btn-primary:hover:not(:disabled) { background: rgba(0,119,237,0.95); }
+.btn-primary:active:not(:disabled) { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.42; cursor: not-allowed; }
+
+.spinner {
+  width: 13px; height: 13px; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Rows (account + activity) ─── */
+.rows { list-style: none; }
+.row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 0; border-bottom: 0.5px solid rgba(0,0,0,0.07);
+}
+.row.last { border-bottom: none; }
+.rk { font-size: 15px; color: #1d1d1f; }
+.rv { font-size: 15px; color: #6e6e73; margin-left: auto; }
+
+/* pulse dot for activity */
+.pulse-dot {
+  flex-shrink: 0; width: 7px; height: 7px;
+  border-radius: 50%; background: #0071e3; opacity: 0.55;
 }
 
-.log-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.empty { font-size: 15px; color: #86868b; text-align: center; padding: 14px 0; }
 
-.log-action {
-  font-weight: 500;
-  color: #333;
-}
-
-.log-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.log-time {
-  font-size: 12px;
-  color: #666;
-}
-
-.log-ip {
-  font-size: 12px;
-  color: #999;
-}
-
-.empty-logs {
-  text-align: center;
-  color: #999;
-  padding: 20px;
-}
-
-.account-info {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.info-item:last-child {
-  border-bottom: none;
-}
-
-.label {
-  color: #666;
-  font-weight: 500;
-}
-
-.value {
-  color: #333;
-  font-weight: bold;
-}
-
-@media (max-width: 768px) {
-  .profile-page {
-    padding: 10px;
-  }
-
-  .header {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-  }
-
-  .header-right {
-    align-self: flex-end;
-  }
-
-  .user-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 15px;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(1, 1fr);
-  }
-
-  .log-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .log-meta {
-    align-items: flex-start;
-  }
-
-  .log-actions {
-    flex-direction: column;
-    gap: 2px;
-  }
+/* ─── Responsive ─── */
+@media (max-width: 430px) {
+  .main { padding: 16px 14px 52px; }
+  .identity { padding: 28px 12px 22px; }
+  .name { font-size: 22px; }
+  .stat-n { font-size: 28px; }
+  .navbar { padding: 0 16px; }
+  .glass-card { padding: 18px 16px; }
 }
 </style>

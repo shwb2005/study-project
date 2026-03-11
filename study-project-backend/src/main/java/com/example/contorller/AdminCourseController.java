@@ -25,7 +25,7 @@ public class AdminCourseController {
     @GetMapping("/course/list")
     public RestBean<List<Course>> getAdminCourseList(HttpSession session) {
         try {
-            logger.info("=== 开始处理管理员课程列表请求 ===");
+
 
             // 检查管理员权限
             Admin admin = (Admin) session.getAttribute("admin");
@@ -34,9 +34,7 @@ public class AdminCourseController {
                 return RestBean.failure(401, Collections.emptyList());
             }
 
-            logger.info("管理员验证通过: {}", admin.getUsername());
             List<Course> courses = courseService.getAllCourses();
-            logger.info("获取到 {} 门课程", courses.size());
 
             return RestBean.success(courses);
         } catch (Exception e) {
@@ -53,7 +51,6 @@ public class AdminCourseController {
                                            @RequestParam(defaultValue = "12") Integer maxCheckInCount,
                                            HttpSession session) {
         try {
-            logger.info("添加课程请求 - 名称: {}, 教师: {}", name, teacherName);
 
             // 检查管理员权限
             Admin admin = (Admin) session.getAttribute("admin");
@@ -73,7 +70,6 @@ public class AdminCourseController {
 
             boolean success = courseService.addCourse(course);
             if (success) {
-                logger.info("课程添加成功: {}", name);
                 return RestBean.success("课程添加成功");
             } else {
                 logger.error("课程添加失败: {}", name);
@@ -88,7 +84,6 @@ public class AdminCourseController {
     @PostMapping("/course/delete")
     public RestBean<String> deleteAdminCourse(@RequestParam Integer courseId, HttpSession session) {
         try {
-            logger.info("删除课程请求 - 课程ID: {}", courseId);
 
             // 检查管理员权限
             Admin admin = (Admin) session.getAttribute("admin");
@@ -98,7 +93,6 @@ public class AdminCourseController {
 
             boolean success = courseService.deleteCourse(courseId);
             if (success) {
-                logger.info("课程删除成功: {}", courseId);
                 return RestBean.success("课程删除成功");
             } else {
                 logger.error("课程删除失败: {}", courseId);
@@ -119,7 +113,6 @@ public class AdminCourseController {
                                               @RequestParam Integer maxCheckInCount,
                                               HttpSession session) {
         try {
-            logger.info("更新课程请求 - ID: {}, 名称: {}", id, name);
 
             // 检查管理员权限
             Admin admin = (Admin) session.getAttribute("admin");
@@ -138,10 +131,10 @@ public class AdminCourseController {
 
             boolean success = courseService.updateCourse(course);
             if (success) {
-                logger.info("课程更新成功: {}", name);
+
                 return RestBean.success("课程更新成功");
             } else {
-                logger.error("课程更新失败: {}", name);
+
                 return RestBean.failure(500, "课程更新失败");
             }
         } catch (Exception e) {

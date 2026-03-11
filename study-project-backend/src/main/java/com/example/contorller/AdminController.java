@@ -25,15 +25,14 @@ public class AdminController {
     public RestBean<String> login(@RequestParam String username,
                                   @RequestParam String password,
                                   HttpSession session) {
-        logger.info("管理员登录请求 - 用户名: {}, 密码: {}", username, password);
+
 
         if (adminService.validateAdmin(username, password)) {
             Admin admin = adminService.findByUsername(username);
-            logger.info("管理员登录成功 - ID: {}, 用户名: {}", admin.getId(), admin.getUsername());
 
             // 直接使用 Admin 对象存储到 session
             session.setAttribute("admin", admin);
-            logger.info("Session 设置完成");
+
 
             return RestBean.success("管理员登录成功");
         } else {
@@ -45,7 +44,7 @@ public class AdminController {
     @GetMapping("/me")
     public RestBean<Admin> getCurrentAdmin(HttpSession session) {
         Admin admin = (Admin) session.getAttribute("admin");
-        logger.info("获取当前管理员信息 - Session中的admin: {}", admin);
+
 
         if (admin != null) {
             // 返回 Admin 对象，但不包含密码
@@ -53,7 +52,6 @@ public class AdminController {
             safeAdmin.setId(admin.getId());
             safeAdmin.setUsername(admin.getUsername());
             // 不设置密码字段
-            logger.info("返回安全的管理员信息: {}", safeAdmin);
             return new RestBean<>(200, true, safeAdmin);
         } else {
             logger.warn("未找到管理员信息，可能未登录或session过期");
@@ -63,28 +61,21 @@ public class AdminController {
 
     @PostMapping("/logout")
     public RestBean<String> logout(HttpSession session) {
-        logger.info("管理员退出登录");
         session.removeAttribute("admin");
         return RestBean.success("管理员已退出登录");
     }
 
     @GetMapping("/list")
     public RestBean<List<Admin>> getAdminList(HttpSession session) {
-        logger.info("=== 开始处理 /api/admin/list 请求 ===");
 
         // 打印session信息
         Admin sessionAdmin = (Admin) session.getAttribute("admin");
-        logger.info("Session中的admin: {}", sessionAdmin);
-        logger.info("Session ID: {}", session.getId());
 
         try {
             List<Admin> admins = adminService.getAllAdmins();
-            logger.info("获取到的管理员数量: {}", admins.size());
 
             // 移除密码信息
             admins.forEach(admin -> admin.setPassword(null));
-
-            logger.info("=== /api/admin/list 处理完成 ===");
             return RestBean.success(admins);
         } catch (Exception e) {
             logger.error("获取管理员列表失败", e);
@@ -97,7 +88,6 @@ public class AdminController {
     public RestBean<String> addAdmin(@RequestParam String username,
                                      @RequestParam String password) {
         try {
-            logger.info("添加管理员请求 - 用户名: {}, 密码: {}", username, password);
 
             // 检查用户名是否已存在
             if (adminService.findByUsername(username) != null) {

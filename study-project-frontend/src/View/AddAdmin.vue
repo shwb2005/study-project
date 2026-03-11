@@ -15,7 +15,7 @@
         </svg>
         返回
       </button>
-      <span class="navbar-title" >管理员管理</span>
+      <span class="navbar-title">管理员管理</span>
       <span style="width:52px"></span>
     </header>
     <div class="all-courses">
@@ -57,7 +57,10 @@
               <span class="stat-l">用户名</span>
             </div>
             <div class="stat-sep"></div>
-
+            <div class="stat-item">
+              <span class="stat-n">{{ admin.createTime ? formatDate(admin.createTime) : '--' }}</span>
+              <span class="stat-l">创建时间</span>
+            </div>
           </div>
 
           <div class="card-footer">
@@ -445,7 +448,7 @@ onUnmounted(() => {
   border: 0.5px solid rgba(0,0,0,0.06);
 }
 .stat-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.stat-n { font-size: 16px; font-weight: 700; letter-spacing: -0.03em; color: #0071e3; line-height: 1; }
+.stat-n { font-size: 16px; font-weight: 700; letter-spacing: -0.03em; color: #1d1d1f; line-height: 1; }
 .stat-l { font-size: 11px; color: #86868b; }
 .stat-sep { width: 0.5px; height: 28px; background: rgba(0,0,0,0.08); }
 

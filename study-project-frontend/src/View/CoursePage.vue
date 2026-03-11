@@ -1,69 +1,196 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AllCourses from '@/components/course/AllCourses.vue'
 import MyCourses from '@/components/course/MyCourses.vue'
 
 const router = useRouter()
 const activeTab = ref('all')
+
+const scrollBlur = ref(0)
+const scrollOverlay = ref(0)
+
+const handleScroll = () => {
+  const progress = Math.min(window.scrollY / 380, 1)
+  scrollBlur.value = progress * 48
+  scrollOverlay.value = progress * 0.52
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <template>
-  <div class="course-page">
-    <div class="header">
-      <div class="header-left">
-        <el-button @click="router.push('/index')" type="text" icon="el-icon-back">
-          返回首页
-        </el-button>
-        <h1>课程中心</h1>
-      </div>
-      <div class="header-right">
-        <el-button @click="router.push('/profile')" type="primary" plain>
-          个人中心
-        </el-button>
-      </div>
+  <div class="page">
+
+    <!-- 背景图层 -->
+    <div class="bg"></div>
+    <div class="bg-dim"
+         :style="{
+           backdropFilter: `blur(${scrollBlur}px) saturate(140%)`,
+           WebkitBackdropFilter: `blur(${scrollBlur}px) saturate(140%)`,
+           background: `rgba(240,246,252,${scrollOverlay})`
+         }">
     </div>
 
-    <el-tabs v-model="activeTab" class="tabs">
-      <el-tab-pane label="所有课程" name="all">
-        <AllCourses />
-      </el-tab-pane>
+    <!-- 顶部导航 -->
+    <header class="navbar">
+      <button class="nav-btn" @click="router.push('/index')">
+        <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
+          <path d="M8 1L1 8L8 15" stroke="currentColor" stroke-width="1.7"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        返回
+      </button>
+      <span class="navbar-title">课程中心</span>
+      <button class="nav-btn" @click="router.push('/profile')">个人中心</button>
+    </header>
 
-      <el-tab-pane label="我的课程" name="my">
-        <MyCourses />
-      </el-tab-pane>
-    </el-tabs>
+    <main class="main">
+      <!-- 玻璃 Tab 容器 -->
+      <div class="glass-tabs">
+        <!-- 自定义 Tab 切换头 -->
+        <div class="tab-bar">
+          <button class="tab-btn" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">
+            所有课程
+          </button>
+          <button class="tab-btn" :class="{ active: activeTab === 'my' }" @click="activeTab = 'my'">
+            我的课程
+          </button>
+        </div>
+
+        <!-- Tab 内容 -->
+        <div class="tab-content">
+          <AllCourses v-if="activeTab === 'all'" />
+          <MyCourses v-if="activeTab === 'my'" />
+        </div>
+      </div>
+    </main>
+
   </div>
 </template>
 
 <style scoped>
-.course-page {
-  padding: 20px;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── Page ─── */
+.page {
+  min-height: 100vh;
+  position: relative;
+  font-family: -apple-system, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif;
+  color: #1d1d1f;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── 背景图 ─── */
+.bg {
+  position: fixed; inset: 0; z-index: 0;
+  background-image: url('@/assets/images/3.jpeg');
+  background-size: cover;
+  background-position: center 40%;
+  background-repeat: no-repeat;
+}
+
+/* ─── 滚动模糊遮罩 ─── */
+.bg-dim {
+  position: fixed; inset: 0; z-index: 1;
+  transition: backdrop-filter 0.1s linear, -webkit-backdrop-filter 0.1s linear, background 0.1s linear;
+}
+
+/* ─── Navbar ─── */
+.navbar {
+  position: sticky; top: 0; z-index: 100;
+  height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: saturate(200%) blur(40px);
+  -webkit-backdrop-filter: saturate(200%) blur(40px);
+  border-bottom: 0.5px solid rgba(255,255,255,0.65);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+.nav-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 15px;
+  color: #0071e3; padding: 0;
+  transition: opacity 0.1s;
+}
+.nav-btn:hover { opacity: 0.7; }
+.navbar-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; color: #1d1d1f; }
+
+/* ─── Main ─── */
+.main {
+  position: relative; z-index: 2;
   max-width: 1200px;
   margin: 0 auto;
+  padding: 28px 20px 72px;
 }
 
-.header {
+/* ─── 玻璃 Tab 容器 ─── */
+.glass-tabs {
+  border-radius: 20px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: saturate(200%) blur(40px);
+  -webkit-backdrop-filter: saturate(200%) blur(40px);
+  border: 0.5px solid rgba(255,255,255,0.85);
+  box-shadow:
+      0 2px 32px rgba(0,0,0,0.10),
+      0 0.5px 0 rgba(255,255,255,0.95) inset;
+  overflow: hidden;
+}
+
+/* ─── Tab 切换头 ─── */
+.tab-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+  gap: 4px;
+  padding: 12px 16px 0;
+  border-bottom: 0.5px solid rgba(0,0,0,0.07);
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+.tab-btn {
+  position: relative;
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+  border-radius: 10px 10px 0 0;
+  transition: color 0.15s, background 0.15s;
+  letter-spacing: -0.01em;
+}
+.tab-btn:hover { color: #1d1d1f; background: rgba(0,0,0,0.03); }
+.tab-btn.active {
+  color: #1d1d1f;
+  font-weight: 700;
+}
+/* 激活下划线 */
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5px; left: 16px; right: 16px;
+  height: 2px;
+  background: #1d1d1f;
+  border-radius: 2px 2px 0 0;
 }
 
-.header-left h1 {
-  margin: 0;
-  color: #333;
+/* ─── Tab 内容区 ─── */
+.tab-content {
+  padding: 24px 20px;
 }
 
-.tabs {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .main { padding: 16px 14px 52px; }
+  .navbar { padding: 0 16px; }
+  .tab-content { padding: 18px 14px; }
+  .tab-btn { padding: 9px 14px; font-size: 13px; }
 }
 </style>
