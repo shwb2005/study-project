@@ -7,12 +7,14 @@ import MyCourses from '@/components/course/MyCourses.vue'
 const router = useRouter()
 const activeTab = ref('all')
 
-const scrollBlur = ref(0)
+const bgRef = ref(null)
 const scrollOverlay = ref(0)
 
 const handleScroll = () => {
   const progress = Math.min(window.scrollY / 380, 1)
-  scrollBlur.value = progress * 48
+  if (bgRef.value) {
+    bgRef.value.style.filter = `blur(${progress * 48}px) saturate(140%)`
+  }
   scrollOverlay.value = progress * 0.52
 }
 
@@ -26,18 +28,9 @@ onUnmounted(() => {
 
 <template>
   <div class="page">
+    <div class="bg" ref="bgRef"></div>
+    <div class="bg-dim" :style="{ background: `rgba(240,246,252,${scrollOverlay})` }"></div>
 
-    <!-- 背景图层 -->
-    <div class="bg"></div>
-    <div class="bg-dim"
-         :style="{
-           backdropFilter: `blur(${scrollBlur}px) saturate(140%)`,
-           WebkitBackdropFilter: `blur(${scrollBlur}px) saturate(140%)`,
-           background: `rgba(240,246,252,${scrollOverlay})`
-         }">
-    </div>
-
-    <!-- 顶部导航 -->
     <header class="navbar">
       <button class="nav-btn" @click="router.push('/index')">
         <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
@@ -51,9 +44,7 @@ onUnmounted(() => {
     </header>
 
     <main class="main">
-      <!-- 玻璃 Tab 容器 -->
       <div class="glass-tabs">
-        <!-- 自定义 Tab 切换头 -->
         <div class="tab-bar">
           <button class="tab-btn" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">
             所有课程
@@ -62,22 +53,18 @@ onUnmounted(() => {
             我的课程
           </button>
         </div>
-
-        <!-- Tab 内容 -->
         <div class="tab-content">
           <AllCourses v-if="activeTab === 'all'" />
           <MyCourses v-if="activeTab === 'my'" />
         </div>
       </div>
     </main>
-
   </div>
 </template>
 
 <style scoped>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ─── Page ─── */
 .page {
   min-height: 100vh;
   position: relative;
@@ -86,22 +73,21 @@ onUnmounted(() => {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ─── 背景图 ─── */
 .bg {
   position: fixed; inset: 0; z-index: 0;
   background-image: url('@/assets/images/3.jpeg');
   background-size: cover;
   background-position: center 40%;
   background-repeat: no-repeat;
+  transition: filter 0.1s linear;
 }
 
-/* ─── 滚动模糊遮罩 ─── */
 .bg-dim {
   position: fixed; inset: 0; z-index: 1;
-  transition: backdrop-filter 0.1s linear, -webkit-backdrop-filter 0.1s linear, background 0.1s linear;
+  transition: background 0.1s linear;
+  pointer-events: none;
 }
 
-/* ─── Navbar ─── */
 .navbar {
   position: sticky; top: 0; z-index: 100;
   height: 52px;
@@ -123,7 +109,6 @@ onUnmounted(() => {
 .nav-btn:hover { opacity: 0.7; }
 .navbar-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; color: #1d1d1f; }
 
-/* ─── Main ─── */
 .main {
   position: relative; z-index: 2;
   max-width: 1200px;
@@ -131,7 +116,6 @@ onUnmounted(() => {
   padding: 28px 20px 72px;
 }
 
-/* ─── 玻璃 Tab 容器 ─── */
 .glass-tabs {
   border-radius: 20px;
   background: rgba(255,255,255,0.52);
@@ -141,10 +125,8 @@ onUnmounted(() => {
   box-shadow:
       0 2px 32px rgba(0,0,0,0.10),
       0 0.5px 0 rgba(255,255,255,0.95) inset;
-  overflow: hidden;
 }
 
-/* ─── Tab 切换头 ─── */
 .tab-bar {
   display: flex;
   gap: 4px;
@@ -155,23 +137,14 @@ onUnmounted(() => {
 .tab-btn {
   position: relative;
   padding: 10px 20px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  color: #86868b;
-  border-radius: 10px 10px 0 0;
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 500;
+  color: #86868b; border-radius: 10px 10px 0 0;
   transition: color 0.15s, background 0.15s;
   letter-spacing: -0.01em;
 }
 .tab-btn:hover { color: #1d1d1f; background: rgba(0,0,0,0.03); }
-.tab-btn.active {
-  color: #1d1d1f;
-  font-weight: 700;
-}
-/* 激活下划线 */
+.tab-btn.active { color: #1d1d1f; font-weight: 700; }
 .tab-btn.active::after {
   content: '';
   position: absolute;
@@ -181,12 +154,8 @@ onUnmounted(() => {
   border-radius: 2px 2px 0 0;
 }
 
-/* ─── Tab 内容区 ─── */
-.tab-content {
-  padding: 24px 20px;
-}
+.tab-content { padding: 24px 20px; }
 
-/* ─── Responsive ─── */
 @media (max-width: 768px) {
   .main { padding: 16px 14px 52px; }
   .navbar { padding: 0 16px; }

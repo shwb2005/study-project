@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { get, post } from "@/net"
-import { ElMessage, ElRate } from "element-plus"
+import {ref, onMounted} from 'vue'
+import {get, post} from "@/net"
+import {ElMessage, ElRate} from "element-plus"
 
 const myCourses = ref([])
 
@@ -29,19 +29,27 @@ const loadMyCourses = () => {
         maxCheckInCount: 12
       }
     }))
-  }, () => { myCourses.value = [] })
+  }, () => {
+    myCourses.value = []
+  })
 }
 
 const unenrollCourse = (courseId) => {
-  post('/api/course/unenroll', { courseId }, () => {
-    ElMessage.success('取消报名成功'); loadMyCourses()
-  }, () => { ElMessage.error('取消报名失败') })
+  post('/api/course/unenroll', {courseId}, () => {
+    ElMessage.success('取消报名成功');
+    loadMyCourses()
+  }, () => {
+    ElMessage.error('取消报名失败')
+  })
 }
 
 const checkIn = (relation) => {
-  post('/api/course/check-in', { courseId: relation.courseId }, () => {
-    ElMessage.success('签到成功！'); loadMyCourses()
-  }, () => { ElMessage.error('签到失败') })
+  post('/api/course/check-in', {courseId: relation.courseId}, () => {
+    ElMessage.success('签到成功！');
+    loadMyCourses()
+  }, () => {
+    ElMessage.error('签到失败')
+  })
 }
 
 const showRatingDialog = ref(false)
@@ -59,15 +67,21 @@ const openRatingDialog = (relation, reRating = false) => {
 }
 
 const submitRating = () => {
-  if (selectedRating.value === 0) { ElMessage.warning('请先选择评分星级'); return }
+  if (selectedRating.value === 0) {
+    ElMessage.warning('请先选择评分星级');
+    return
+  }
   post('/api/course/rate', {
     courseId: currentRatingCourse.value.courseId,
     rating: selectedRating.value,
     review: ratingReview.value.trim()
   }, () => {
     ElMessage.success(isReRating.value ? '重新评分成功' : '评分成功')
-    showRatingDialog.value = false; loadMyCourses()
-  }, () => { ElMessage.error('评分失败') })
+    showRatingDialog.value = false;
+    loadMyCourses()
+  }, () => {
+    ElMessage.error('评分失败')
+  })
 }
 
 const getCheckInProgress = (r) => Math.round((r.checkInCount / (r.maxCheckInCount || 12)) * 100)
@@ -80,9 +94,11 @@ const isTodayCheckedIn = (r) => {
 }
 const getCheckInButtonText = (r) => isCheckInCompleted(r) ? '已完成' : isTodayCheckedIn(r) ? '今日已签到' : '签到'
 const isCheckInDisabled = (r) => isCheckInCompleted(r) || isTodayCheckedIn(r)
-const getRatingText = (v) => ({ 1: '很差', 2: '较差', 3: '一般', 4: '较好', 5: '很好' }[v] || '未评分')
+const getRatingText = (v) => ({1: '很差', 2: '较差', 3: '一般', 4: '较好', 5: '很好'}[v] || '未评分')
 
-onMounted(() => { loadMyCourses() })
+onMounted(() => {
+  loadMyCourses()
+})
 </script>
 
 <template>
@@ -95,7 +111,6 @@ onMounted(() => { loadMyCourses() })
     <div class="course-grid">
       <div v-for="relation in myCourses" :key="relation.id" class="glass-card">
 
-        <!-- 课程标题行 -->
         <div class="course-head">
           <h3 class="course-name">{{ relation.course?.name || `课程 ${relation.courseId}` }}</h3>
           <span v-if="relation.rating > 0" class="rating-pill">
@@ -106,7 +121,6 @@ onMounted(() => { loadMyCourses() })
           </span>
         </div>
 
-        <!-- 学习进度 — 立体嵌入块 -->
         <div class="inset-block">
           <div class="inset-row">
             <span class="inset-label">学习进度</span>
@@ -117,7 +131,6 @@ onMounted(() => { loadMyCourses() })
           </div>
         </div>
 
-        <!-- 签到进度 — 立体嵌入块 -->
         <div class="inset-block">
           <div class="inset-row">
             <span class="inset-label">签到进度</span>
@@ -130,13 +143,11 @@ onMounted(() => { loadMyCourses() })
           </div>
         </div>
 
-        <!-- 我的评价 -->
         <div v-if="relation.rating > 0 && relation.review" class="review-block">
           <span class="review-quote">"</span>
           <p class="review-text">{{ relation.review }}</p>
         </div>
 
-        <!-- 操作区 -->
         <div class="actions">
           <button class="btn btn-primary"
                   @click="checkIn(relation)"
@@ -166,11 +177,11 @@ onMounted(() => { loadMyCourses() })
       </div>
     </div>
 
-    <!-- 空状态 -->
     <div v-if="myCourses.length === 0" class="empty-state">
       <div class="empty-icon-wrap">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" width="36" height="36">
-          <path d="M24 10c-6 0-10 3-10 3v22s4-3 10-3 10 3 10 3V13s-4-3-10-3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24 10c-6 0-10 3-10 3v22s4-3 10-3 10 3 10 3V13s-4-3-10-3z" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"/>
           <path d="M24 10v22" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
@@ -181,21 +192,26 @@ onMounted(() => { loadMyCourses() })
     <!-- 评分弹窗 -->
     <el-dialog :title="isReRating ? '重新评分' : '课程评分'"
                v-model="showRatingDialog" width="460px"
-               :close-on-click-modal="false" class="glass-dialog">
+               :close-on-click-modal="false"
+               :append-to-body="true"
+               align-center
+               class="glass-dialog">
       <div v-if="currentRatingCourse" class="dialog-body">
-        <p class="dialog-course-name">{{ currentRatingCourse.course?.name || `课程 ${currentRatingCourse.courseId}` }}</p>
+        <p class="dialog-course-name">{{
+            currentRatingCourse.course?.name || `课程 ${currentRatingCourse.courseId}`
+          }}</p>
         <div class="dialog-section">
           <label class="sec-title">评分</label>
           <el-rate v-model="selectedRating"
                    :colors="['#d1d1d6','#1d1d1f','#1d1d1f']"
                    show-score
-                   :score-template="`${selectedRating} 分 · ${getRatingText(selectedRating)}`" />
+                   :score-template="`${selectedRating} 分 · ${getRatingText(selectedRating)}`"/>
           <p class="dialog-hint">请根据课程质量和学习体验评分</p>
         </div>
         <div class="dialog-section">
           <label class="sec-title">评价 <span class="opt-tag">选填</span></label>
           <el-input v-model="ratingReview" type="textarea" :rows="4"
-                    placeholder="分享您的学习感受和建议…" maxlength="500" show-word-limit class="glass-textarea" />
+                    placeholder="分享您的学习感受和建议…" maxlength="500" show-word-limit class="glass-textarea"/>
         </div>
       </div>
       <template #footer>
@@ -212,7 +228,11 @@ onMounted(() => { loadMyCourses() })
 </template>
 
 <style scoped>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 .my-courses {
   width: 100%;
@@ -221,213 +241,427 @@ onMounted(() => { loadMyCourses() })
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Header ── */
-.tab-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 28px; }
-.header-title { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #1d1d1f; }
-.course-count { font-size: 14px; color: #86868b; }
+.tab-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 28px;
+}
 
-/* ── Grid ── */
+.header-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #1d1d1f;
+}
+
+.course-count {
+  font-size: 14px;
+  color: #86868b;
+}
+
 .course-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
 }
 
-/* ── Glass card — 与 ProfileView 完全一致 ── */
 .glass-card {
   border-radius: 20px;
   padding: 22px;
-  background: rgba(255,255,255,0.52);
+  background: rgba(255, 255, 255, 0.52);
   backdrop-filter: saturate(200%) blur(40px);
   -webkit-backdrop-filter: saturate(200%) blur(40px);
-  border: 0.5px solid rgba(255,255,255,0.85);
-  box-shadow:
-      0 2px 32px rgba(0,0,0,0.10),
-      0 0.5px 0 rgba(255,255,255,0.95) inset;
+  border: 0.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 32px rgba(0, 0, 0, 0.10),
+  0 0.5px 0 rgba(255, 255, 255, 0.95) inset;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease;
 }
+
 .glass-card:hover {
   transform: translateY(-4px);
-  box-shadow:
-      0 6px 40px rgba(0,0,0,0.13),
-      0 0.5px 0 rgba(255,255,255,0.95) inset;
+  box-shadow: 0 6px 40px rgba(0, 0, 0, 0.13),
+  0 0.5px 0 rgba(255, 255, 255, 0.95) inset;
 }
 
-/* ── Course head ── */
-.course-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.course-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
 .course-name {
-  font-size: 17px; font-weight: 700; letter-spacing: -0.02em;
-  color: #1d1d1f; line-height: 1.35; flex: 1;
-}
-.rating-pill {
-  display: inline-flex; align-items: center; gap: 3px;
-  padding: 3px 9px;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(8px);
-  color: #fff; border-radius: 20px; font-size: 12px; font-weight: 600; flex-shrink: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1d1d1f;
+  line-height: 1.35;
+  flex: 1;
 }
 
-/* ── 立体嵌入块（凹陷感）── */
+.rating-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 9px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 .inset-block {
-  background: rgba(0,0,0,0.04);
+  background: rgba(0, 0, 0, 0.04);
   border-radius: 12px;
   padding: 13px 14px;
-  /* 凹陷阴影：内阴影顶部暗、底部亮，模拟凹槽 */
-  box-shadow:
-      0 2px 4px rgba(0,0,0,0.06) inset,
-      0 1px 0 rgba(255,255,255,0.85);
-  border: 0.5px solid rgba(0,0,0,0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06) inset,
+  0 1px 0 rgba(255, 255, 255, 0.85);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
 }
-.inset-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
-.inset-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #86868b; }
-.inset-val { font-size: 14px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.02em; }
+
+.inset-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.inset-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #86868b;
+}
+
+.inset-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
+}
 
 .bar-track {
   height: 5px;
-  background: rgba(0,0,0,0.08);
+  background: rgba(0, 0, 0, 0.08);
   border-radius: 3px;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1) inset;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) inset;
 }
-.bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
-.bar-progress { background: linear-gradient(90deg, #3a3a3c, #1d1d1f); }
-.bar-checkin { background: linear-gradient(90deg, #6e6e73, #3a3a3c); }
-.bar-done { background: linear-gradient(90deg, #34c759, #28a745); }
 
-/* ── Review ── */
+.bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bar-progress {
+  background: linear-gradient(90deg, #3a3a3c, #1d1d1f);
+}
+
+.bar-checkin {
+  background: linear-gradient(90deg, #6e6e73, #3a3a3c);
+}
+
+.bar-done {
+  background: linear-gradient(90deg, #34c759, #28a745);
+}
+
 .review-block {
   position: relative;
-  background: rgba(255,255,255,0.38);
+  background: rgba(255, 255, 255, 0.38);
   backdrop-filter: blur(10px);
-  border: 0.5px solid rgba(255,255,255,0.7);
+  border: 0.5px solid rgba(255, 255, 255, 0.7);
   border-radius: 12px;
   padding: 11px 14px 11px 26px;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
 }
-.review-quote {
-  position: absolute; top: 2px; left: 9px;
-  font-size: 26px; font-family: Georgia, serif;
-  color: rgba(0,0,0,0.1); line-height: 1;
-}
-.review-text { font-size: 13px; color: #6e6e73; line-height: 1.6; font-style: italic; }
 
-/* ── Actions ── */
-.actions { display: flex; flex-direction: column; gap: 8px; }
-.btn-row { display: flex; gap: 8px; }
+.review-quote {
+  position: absolute;
+  top: 2px;
+  left: 9px;
+  font-size: 26px;
+  font-family: Georgia, serif;
+  color: rgba(0, 0, 0, 0.1);
+  line-height: 1;
+}
+
+.review-text {
+  font-size: 13px;
+  color: #6e6e73;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
 
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 10px 16px; border-radius: 10px;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  border: none; outline: none; font-family: inherit;
-  transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: -0.01em;
 }
+
 .btn-primary {
-  background: rgba(29,29,31,0.88);
+  background: rgba(29, 29, 31, 0.88);
   backdrop-filter: blur(8px);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.22), 0 0.5px 0 rgba(255,255,255,0.12) inset;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22), 0 0.5px 0 rgba(255, 255, 255, 0.12) inset;
 }
+
 .btn-primary:hover:not(:disabled):not(.btn-disabled) {
-  background: rgba(0,0,0,0.95);
+  background: rgba(0, 0, 0, 0.95);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
 }
-.btn-disabled { background: rgba(0,0,0,0.06) !important; color: #aeaeb2 !important; cursor: not-allowed; box-shadow: none !important; transform: none !important; }
+
+.btn-disabled {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: #aeaeb2 !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+}
 
 .btn-ghost {
   flex: 1;
-  background: rgba(255,255,255,0.55);
+  background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: #1d1d1f;
-  border: 0.5px solid rgba(255,255,255,0.8);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.95) inset, 0 2px 8px rgba(0,0,0,0.06);
+  border: 0.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.95) inset, 0 2px 8px rgba(0, 0, 0, 0.06);
 }
-.btn-ghost:hover { background: rgba(255,255,255,0.78); transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,0.95) inset, 0 4px 12px rgba(0,0,0,0.09); }
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.78);
+  transform: translateY(-1px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.95) inset, 0 4px 12px rgba(0, 0, 0, 0.09);
+}
 
 .btn-danger {
   flex: 1;
-  background: rgba(255,59,48,0.08);
+  background: rgba(255, 59, 48, 0.08);
   backdrop-filter: blur(12px);
   color: #ff3b30;
-  border: 0.5px solid rgba(255,59,48,0.2);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset;
+  border: 0.5px solid rgba(255, 59, 48, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
 }
-.btn-danger:hover { background: rgba(255,59,48,0.14); transform: translateY(-1px); }
 
-/* ── Empty ── */
-.empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 80px 20px; text-align: center; }
-.empty-icon-wrap {
-  width: 72px; height: 72px; border-radius: 20px;
-  background: rgba(255,255,255,0.52);
-  backdrop-filter: blur(20px);
-  border: 0.5px solid rgba(255,255,255,0.85);
-  box-shadow: 0 2px 20px rgba(0,0,0,0.08);
-  display: flex; align-items: center; justify-content: center;
-  color: #c7c7cc; margin-bottom: 6px;
+.btn-danger:hover {
+  background: rgba(255, 59, 48, 0.14);
+  transform: translateY(-1px);
 }
-.empty-title { font-size: 17px; font-weight: 600; color: #1d1d1f; }
-.empty-desc { font-size: 14px; color: #86868b; }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.empty-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.52);
+  backdrop-filter: blur(20px);
+  border: 0.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c7c7cc;
+  margin-bottom: 6px;
+}
+
+.empty-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.empty-desc {
+  font-size: 14px;
+  color: #86868b;
+}
 
 /* ── Dialog ── */
 :deep(.glass-dialog .el-dialog) {
   border-radius: 20px;
-  background: rgba(255,255,255,0.72);
+  background: rgba(255, 255, 255, 0.72);
   backdrop-filter: saturate(180%) blur(40px);
   -webkit-backdrop-filter: saturate(180%) blur(40px);
-  border: 0.5px solid rgba(255,255,255,0.85);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.16);
+  border: 0.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
 }
-:deep(.glass-dialog .el-dialog__header) { padding: 22px 24px 0; border-bottom: none; }
-:deep(.glass-dialog .el-dialog__title) { font-size: 18px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.02em; }
-:deep(.glass-dialog .el-dialog__body) { padding: 18px 24px; }
 
-.dialog-body { display: flex; flex-direction: column; gap: 20px; }
+:deep(.glass-dialog .el-dialog__header) {
+  padding: 22px 24px 0;
+  border-bottom: none;
+}
+
+:deep(.glass-dialog .el-dialog__title) {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
+}
+
+:deep(.glass-dialog .el-dialog__body) {
+  padding: 18px 24px;
+}
+
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .dialog-course-name {
-  font-size: 15px; font-weight: 600; color: #1d1d1f;
-  padding-bottom: 16px; border-bottom: 0.5px solid rgba(0,0,0,0.07);
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.07);
 }
-.dialog-section { display: flex; flex-direction: column; gap: 9px; }
+
+.dialog-section {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
 .sec-title {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
-  text-transform: uppercase; color: #86868b;
-  display: flex; align-items: center; gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #86868b;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
+
 .opt-tag {
-  font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0;
-  color: #aeaeb2; background: rgba(0,0,0,0.05); padding: 2px 7px; border-radius: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #aeaeb2;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 7px;
+  border-radius: 4px;
 }
-.dialog-hint { font-size: 12px; color: #aeaeb2; }
+
+.dialog-hint {
+  font-size: 12px;
+  color: #aeaeb2;
+}
 
 :deep(.glass-textarea .el-textarea__inner) {
-  background: rgba(255,255,255,0.48);
+  background: rgba(255, 255, 255, 0.48);
   backdrop-filter: blur(10px);
-  border: 0.5px solid rgba(255,255,255,0.8);
-  border-radius: 10px; font-size: 14px; line-height: 1.6; font-family: inherit; resize: none;
+  border: 0.5px solid rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: inherit;
+  resize: none;
 }
-:deep(.glass-textarea .el-textarea__inner:focus) { border-color: rgba(0,113,227,0.4); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
 
-.dialog-footer { display: flex; gap: 10px; justify-content: flex-end; }
-.dlg-btn {
-  padding: 9px 22px; border-radius: 980px;
-  font-size: 14px; font-weight: 600; cursor: pointer;
-  border: none; font-family: inherit; transition: all 0.15s;
+:deep(.glass-textarea .el-textarea__inner:focus) {
+  border-color: rgba(0, 113, 227, 0.4);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
 }
-.dlg-cancel { background: rgba(0,0,0,0.06); color: #1d1d1f; }
-.dlg-cancel:hover { background: rgba(0,0,0,0.10); }
-.dlg-confirm { background: rgba(29,29,31,0.88); backdrop-filter: blur(8px); color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-.dlg-confirm:hover:not(.dlg-disabled) { background: rgba(0,0,0,0.95); }
-.dlg-disabled { opacity: 0.38; cursor: not-allowed; }
+
+.dialog-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.dlg-btn {
+  padding: 9px 22px;
+  border-radius: 980px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.dlg-cancel {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1d1d1f;
+}
+
+.dlg-cancel:hover {
+  background: rgba(0, 0, 0, 0.10);
+}
+
+.dlg-confirm {
+  background: rgba(29, 29, 31, 0.88);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.dlg-confirm:hover:not(.dlg-disabled) {
+  background: rgba(0, 0, 0, 0.95);
+}
+
+.dlg-disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
 
 @media (max-width: 768px) {
-  .course-grid { grid-template-columns: 1fr; gap: 12px; }
-  .header-title { font-size: 22px; }
-  .glass-card { padding: 18px 16px; }
-  .btn-row { flex-direction: column; }
+  .course-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .header-title {
+    font-size: 22px;
+  }
+
+  .glass-card {
+    padding: 18px 16px;
+  }
+
+  .btn-row {
+    flex-direction: column;
+  }
 }
 </style>
