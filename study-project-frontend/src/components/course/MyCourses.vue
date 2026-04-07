@@ -57,12 +57,14 @@ const currentRatingCourse = ref(null)
 const selectedRating = ref(0)
 const ratingReview = ref('')
 const isReRating = ref(false)
+const isAnonymous = ref(false)
 
 const openRatingDialog = (relation, reRating = false) => {
   currentRatingCourse.value = relation
   selectedRating.value = relation.rating || 0
   ratingReview.value = relation.review || ''
   isReRating.value = reRating
+  isAnonymous.value = false
   showRatingDialog.value = true
 }
 
@@ -74,7 +76,8 @@ const submitRating = () => {
   post('/api/course/rate', {
     courseId: currentRatingCourse.value.courseId,
     rating: selectedRating.value,
-    review: ratingReview.value.trim()
+    review: ratingReview.value.trim(),
+    anonymous: isAnonymous.value
   }, () => {
     ElMessage.success(isReRating.value ? '重新评分成功' : '评分成功')
     showRatingDialog.value = false;
@@ -212,6 +215,17 @@ onMounted(() => {
           <label class="sec-title">评价 <span class="opt-tag">选填</span></label>
           <el-input v-model="ratingReview" type="textarea" :rows="4"
                     placeholder="分享您的学习感受和建议…" maxlength="500" show-word-limit class="glass-textarea"/>
+        </div>
+        <div class="dialog-section">
+          <label class="anonymous-toggle" @click="isAnonymous = !isAnonymous">
+            <span class="toggle-check" :class="{ active: isAnonymous }">
+              <svg v-if="isAnonymous" viewBox="0 0 20 20" fill="currentColor" width="12" height="12">
+                <path d="M5 10l4 4L15 6" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="toggle-label">匿名评价</span>
+            <span class="toggle-hint">社区中不会显示你的用户名和头像</span>
+          </label>
         </div>
       </div>
       <template #footer>
@@ -586,6 +600,51 @@ onMounted(() => {
 .dialog-hint {
   font-size: 12px;
   color: #aeaeb2;
+}
+
+.anonymous-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 10px;
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.anonymous-toggle:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+.toggle-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid #d1d1d6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.toggle-check.active {
+  background: #1d1d1f;
+  border-color: #1d1d1f;
+}
+
+.toggle-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.toggle-hint {
+  font-size: 12px;
+  color: #aeaeb2;
+  margin-left: auto;
 }
 
 :deep(.glass-textarea .el-textarea__inner) {

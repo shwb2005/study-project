@@ -1,9 +1,13 @@
 package com.example.service.impl;
 
+import com.example.entity.CommunityReview;
 import com.example.entity.Course;
 import com.example.entity.UserCourseRelation;
+import com.example.mapper.CommunityReviewMapper;
 import com.example.mapper.CourseMapper;
 import com.example.mapper.UserCourseRelationMapper;
+import com.example.mapper.UserMapper;
+import com.example.mapper.UserProfileMapper;
 import com.example.service.CourseService;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
@@ -24,6 +28,15 @@ public class CourseServiceImpl implements CourseService {
 
     @Resource
     private UserCourseRelationMapper userCourseRelationMapper;
+
+    @Resource
+    private CommunityReviewMapper communityReviewMapper;
+
+    @Resource
+    private UserMapper userMapper;
+
+    @Resource
+    private UserProfileMapper userProfileMapper;
 
     @Override
     public List<Course> getAllCourses() {
@@ -90,9 +103,9 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public boolean rateCourse(Integer userId, Integer courseId, Integer rating, String review) {
+    public boolean rateCourse(Integer userId, Integer courseId, Integer rating, String review, boolean anonymous) {
         try {
-            logger.info("开始评分 - userId: {}, courseId: {}, rating: {}", userId, courseId, rating);
+            logger.info("开始评分 - userId: {}, courseId: {}, rating: {}, anonymous: {}", userId, courseId, rating, anonymous);
 
             UserCourseRelation relation = userCourseRelationMapper.findByUserIdAndCourseId(userId, courseId);
             if (relation == null) {
@@ -105,6 +118,37 @@ public class CourseServiceImpl implements CourseService {
 
             int result = userCourseRelationMapper.updateRating(relation);
             boolean success = result > 0;
+
+            if (success) {
+                // 同步到社区评价表
+                try {
+                    Course course = courseMapper.findById(courseId);
+                    String username = "匿名用户";
+                    String avatar = null;
+                    if (!anonymous) {
+                        var account = userMapper.findWithProfileById(userId);
+                        username = (account != null) ? account.getUsername() : "";
+                        var profile = userProfileMapper.findByUserId(userId);
+                        if (profile != null) {
+                            avatar = profile.getAvatar();
+                        }
+                    }
+
+                    CommunityReview cr = new CommunityReview();
+                    cr.setUserId(userId);
+                    cr.setUsername(username);
+                    cr.setAvatar(avatar);
+                    cr.setCourseId(courseId);
+                    cr.setCourseName(course != null ? course.getName() : "");
+                    cr.setRating(rating);
+                    cr.setReview(review);
+                    cr.setIsAnonymous(anonymous);
+                    communityReviewMapper.insertOrUpdate(cr);
+                    logger.info("同步社区评价成功 - userId: {}, courseId: {}, anonymous: {}", userId, courseId, anonymous);
+                } catch (Exception e) {
+                    logger.error("同步社区评价失败（不影响评分）: {}", e.getMessage(), e);
+                }
+            }
 
             logger.info("评分{} - userId: {}, courseId: {}", success ? "成功" : "失败", userId, courseId);
 
@@ -206,6 +250,56 @@ public class CourseServiceImpl implements CourseService {
         } catch (Exception e) {
             logger.error("更新课程失败", e);
             return false;
+        }
+    }
+    
+    @Override
+    public List<Course> getCoursesSorted(String sortBy, String order) {
+        try {
+            return courseMapper.findAllSorted(sortBy, order);
+        } catch (Exception e) {
+            logger.error("排序查询失败: {}", e.getMessage(), e);
+            return courseMapper.findAll();
+        }
+    }
+    
+    @Override
+    public List<Course> getCoursesByTeacher(String teacherName) {
+        try {
+            return courseMapper.findByTeacherName(teacherName);
+        } catch (Exception e) {
+            logger.error("教师筛选失败: {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+    
+    @Override
+    public List<Course> getCoursesPaginated(int page, int pageSize) {
+        try {
+            return courseMapper.findPaginated(page, pageSize);
+        } catch (Exception e) {
+            logger.error("分页查询失败: {}", e.getMessage(), e);
+            return courseMapper.findAll();
+        }
+    }
+    
+    @Override
+    public List<Course> getCoursesWithOptions(String sortBy, String order, String teacherName, Integer page, Integer pageSize) {
+        try {
+            return courseMapper.findWithOptions(sortBy, order, teacherName, page, pageSize);
+        } catch (Exception e) {
+            logger.error("高级查询失败: {}", e.getMessage(), e);
+            return courseMapper.findAll();
+        }
+    }
+    
+    @Override
+    public List<String> getAllTeachers() {
+        try {
+            return courseMapper.findAllTeachers();
+        } catch (Exception e) {
+            logger.error("获取教师列表失败: {}", e.getMessage(), e);
+            return List.of();
         }
     }
 }

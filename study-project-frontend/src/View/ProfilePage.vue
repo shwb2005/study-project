@@ -5,6 +5,7 @@ import { get } from "@/net"
 import { ElMessage } from "element-plus"
 import { useStore } from "@/stores"
 import axios from 'axios'
+import AIChat from "@/components/AIChat.vue"
 
 const store = useStore()
 const router = useRouter()
@@ -242,7 +243,12 @@ onUnmounted(() => {
           </li>
         </ul>
         <p class="empty" v-else>暂无动态</p>
-      </section>
+
+      <!-- AI Chat -->
+      <section class="glass-card">
+        <h2 class="sec-title">AI 智能助手</h2>
+        <AIChat />
+      </section>      </section>
 
     </main>
   </div>

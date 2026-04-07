@@ -2,9 +2,11 @@ package com.example.contorller;
 
 import com.example.entity.RestBean;
 import com.example.entity.Course;
+import com.example.entity.CommunityReview;
 import com.example.entity.UserCourseRelation;
 import com.example.entity.user.AccountUser;
 import com.example.entity.user.Admin;
+import com.example.mapper.CommunityReviewMapper;
 import com.example.service.CourseService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
@@ -23,6 +25,9 @@ public class CourseController {
 
     @Resource
     private CourseService courseService;
+
+    @Resource
+    private CommunityReviewMapper communityReviewMapper;
 
     @GetMapping("/list")
     public RestBean<List<Course>> getAllCourses() {
@@ -103,6 +108,7 @@ public class CourseController {
     public RestBean<String> rateCourse(@RequestParam Integer courseId,
                                        @RequestParam Integer rating,
                                        @RequestParam(required = false) String review,
+                                       @RequestParam(defaultValue = "false") boolean anonymous,
                                        HttpSession session) {
         try {
             AccountUser user = (AccountUser) session.getAttribute("account");
@@ -110,7 +116,7 @@ public class CourseController {
                 return RestBean.failure(401, "请先登录");
             }
 
-            if (courseService.rateCourse(user.getId(), courseId, rating, review)) {
+            if (courseService.rateCourse(user.getId(), courseId, rating, review, anonymous)) {
                 return RestBean.success("评分成功");
             } else {
                 return RestBean.failure(400, "评分失败");
@@ -135,6 +141,22 @@ public class CourseController {
             }
         } catch (Exception e) {
             return RestBean.failure(500, "签到失败");
+        }
+    }
+
+    @GetMapping("/community")
+    public RestBean<List<CommunityReview>> getCommunityReviews() {
+        try {
+            List<CommunityReview> reviews = communityReviewMapper.findAll();
+            logger.info("社区评价查询结果: {} 条记录", reviews.size());
+            for (CommunityReview r : reviews) {
+                logger.info("评价详情: id={}, user={}, course={}, rating={}, review={}",
+                        r.getId(), r.getUsername(), r.getCourseName(), r.getRating(), r.getReview());
+            }
+            return RestBean.success(reviews);
+        } catch (Exception e) {
+            logger.error("获取社区评价失败", e);
+            return RestBean.failure(500, Collections.emptyList());
         }
     }
 

@@ -11,10 +11,15 @@ public interface CourseService {
     List<UserCourseRelation> getUserCourses(Integer userId);
     boolean enrollCourse(Integer userId, Integer courseId);
     boolean unenrollCourse(Integer userId, Integer courseId);
-    boolean rateCourse(Integer userId, Integer courseId, Integer rating, String review);
-    boolean checkIn(Integer userId, Integer courseId); // 签到方法
-    // 在 CourseService 接口中添加
+    boolean rateCourse(Integer userId, Integer courseId, Integer rating, String review, boolean anonymous);
+    boolean checkIn(Integer userId, Integer courseId);
     boolean addCourse(Course course);
     boolean deleteCourse(Integer courseId);
     boolean updateCourse(Course course);
+    
+    List<Course> getCoursesSorted(String sortBy, String order);
+    List<Course> getCoursesByTeacher(String teacherName);
+    List<Course> getCoursesPaginated(int page, int pageSize);
+    List<Course> getCoursesWithOptions(String sortBy, String order, String teacherName, Integer page, Integer pageSize);
+    List<String> getAllTeachers();
 }

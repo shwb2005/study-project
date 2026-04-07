@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AllCourses from '@/components/course/AllCourses.vue'
 import MyCourses from '@/components/course/MyCourses.vue'
+import Community from '@/components/course/Community.vue'
 
 const router = useRouter()
 const activeTab = ref('all')
@@ -52,10 +53,14 @@ onUnmounted(() => {
           <button class="tab-btn" :class="{ active: activeTab === 'my' }" @click="activeTab = 'my'">
             我的课程
           </button>
+          <button class="tab-btn" :class="{ active: activeTab === 'community' }" @click="activeTab = 'community'">
+            社区
+          </button>
         </div>
         <div class="tab-content">
           <AllCourses v-if="activeTab === 'all'" />
           <MyCourses v-if="activeTab === 'my'" />
+          <Community v-if="activeTab === 'community'" />
         </div>
       </div>
     </main>
