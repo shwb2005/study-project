@@ -60,6 +60,10 @@ public class CourseServiceImpl implements CourseService {
 
             // 获取课程信息，设置最大签到次数
             Course course = courseMapper.findById(courseId);
+            //更新课程人数
+            course.setStudentsCount(course.getStudentsCount()+1);
+            courseMapper.updateCourse(course);
+
             Integer maxCheckInCount = (course != null && course.getMaxCheckInCount() != null)
                     ? course.getMaxCheckInCount() : 12;
 
@@ -82,6 +86,11 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public boolean unenrollCourse(Integer userId, Integer courseId) {
         try {
+            //更新课程人数
+            Course course = courseMapper.findById(courseId);
+            course.setStudentsCount(course.getStudentsCount()-1);
+            courseMapper.updateCourse(course);
+
             return userCourseRelationMapper.deleteByUserIdAndCourseId(userId, courseId) > 0;
         } catch (Exception e) {
             logger.error("取消报名失败: {}", e.getMessage(), e);
@@ -206,6 +215,56 @@ public class CourseServiceImpl implements CourseService {
         } catch (Exception e) {
             logger.error("更新课程失败", e);
             return false;
+        }
+    }
+    
+    @Override
+    public List<Course> getCoursesSorted(String sortBy, String order) {
+        try {
+            return courseMapper.findAllSorted(sortBy, order);
+        } catch (Exception e) {
+            logger.error("排序查询失败: {}", e.getMessage(), e);
+            return courseMapper.findAll();
+        }
+    }
+    
+    @Override
+    public List<Course> getCoursesByTeacher(String teacherName) {
+        try {
+            return courseMapper.findByTeacherName(teacherName);
+        } catch (Exception e) {
+            logger.error("教师筛选失败: {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+    
+    @Override
+    public List<Course> getCoursesPaginated(int page, int pageSize) {
+        try {
+            return courseMapper.findPaginated(page, pageSize);
+        } catch (Exception e) {
+            logger.error("分页查询失败: {}", e.getMessage(), e);
+            return courseMapper.findAll();
+        }
+    }
+    
+    @Override
+    public List<Course> getCoursesWithOptions(String sortBy, String order, String teacherName, Integer page, Integer pageSize) {
+        try {
+            return courseMapper.findWithOptions(sortBy, order, teacherName, page, pageSize);
+        } catch (Exception e) {
+            logger.error("高级查询失败: {}", e.getMessage(), e);
+            return courseMapper.findAll();
+        }
+    }
+    
+    @Override
+    public List<String> getAllTeachers() {
+        try {
+            return courseMapper.findAllTeachers();
+        } catch (Exception e) {
+            logger.error("获取教师列表失败: {}", e.getMessage(), e);
+            return List.of();
         }
     }
 }

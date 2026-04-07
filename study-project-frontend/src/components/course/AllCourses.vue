@@ -1,23 +1,81 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { get, post } from "@/net"
 import { ElMessage } from "element-plus"
 
 const courses = ref([])
 const myCourses = ref([])
 
+// 正常轮询间隔 (毫秒)
+const NORMAL_INTERVAL = 400
+// 报错后暂停间隔 (毫秒)
+const ERROR_PAUSE_INTERVAL = 10000
+// 存储定时器 ID，用于清理
+let pollingTimer = null
+
+// 封装 API 为 Promise 以便 async/await 调用
 const loadAllCourses = () => {
-  get('/api/course/list', data => { courses.value = data || [] }, () => { courses.value = [] })
-}
-const loadMyCourses = () => {
-  get('/api/course/my-courses', data => { myCourses.value = data || [] }, () => { myCourses.value = [] })
-}
-const isEnrolled = (courseId) => myCourses.value.some(c => c.courseId === courseId)
-const enrollCourse = (courseId) => {
-  post('/api/course/enroll', { courseId }, () => { ElMessage.success('报名成功'); loadMyCourses() }, () => { ElMessage.error('报名失败') })
+  return new Promise((resolve, reject) => {
+    get('/api/course/list', resolve, reject)
+  }).then(data => {
+    courses.value = data || []
+  })
 }
 
-onMounted(() => { loadAllCourses(); loadMyCourses() })
+const loadMyCourses = () => {
+  return new Promise((resolve, reject) => {
+    get('/api/course/my-courses', resolve, reject)
+  }).then(data => {
+    myCourses.value = data || []
+  })
+}
+
+const isEnrolled = (courseId) => myCourses.value.some(c => c.courseId === courseId)
+
+const enrollCourse = (courseId) => {
+  post('/api/course/enroll', { courseId }, () => {
+    ElMessage.success('报名成功')
+    loadMyCourses()
+  }, () => {
+    ElMessage.error('报名失败')
+  })
+}
+
+// 核心轮询逻辑
+const pollingLoop = async () => {
+  try {
+    // 并发请求两个接口
+    await Promise.all([
+      loadAllCourses(),
+      loadMyCourses()
+    ])
+    // 成功：按正常频率继续轮询
+    pollingTimer = setTimeout(pollingLoop, NORMAL_INTERVAL)
+  } catch (error) {
+    // 失败：暂停 10 秒后重试，避免频繁报错
+    console.error('轮询失败，10秒后重试', error)
+    pollingTimer = setTimeout(pollingLoop, ERROR_PAUSE_INTERVAL)
+  }
+}
+
+const startPolling = () => {
+  pollingLoop()
+}
+
+const stopPolling = () => {
+  if (pollingTimer) {
+    clearTimeout(pollingTimer)
+    pollingTimer = null
+  }
+}
+
+onMounted(() => {
+  startPolling()
+})
+
+onUnmounted(() => {
+  stopPolling()
+})
 </script>
 
 <template>
