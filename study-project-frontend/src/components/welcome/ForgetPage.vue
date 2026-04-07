@@ -20,7 +20,7 @@ const errors = reactive({
   password_repeat: ''
 })
 
-const isEmailValid = ref(true);
+const isEmailValid = ref(false);
 const coldTime = ref(0);
 
 const validateEmail = () => {
@@ -36,8 +36,15 @@ const validateEmail = () => {
     email: form.email
   }, (message) => {
     ElMessage.success(message)
+    isEmailValid.value = true
     coldTime.value = 60
-    setInterval(() => coldTime.value--, 1000)
+    const timer = setInterval(() => {
+      coldTime.value--
+      if (coldTime.value <= 0) {
+        clearInterval(timer)
+        isEmailValid.value = false
+      }
+    }, 1000)
   })
 }
 

@@ -2,6 +2,7 @@ package com.example.mapper;
 
 import com.example.entity.CommunityReviewLike;
 import org.apache.ibatis.annotations.*;
+import java.util.List;
 
 @Mapper
 public interface CommunityReviewLikeMapper {
@@ -23,4 +24,19 @@ public interface CommunityReviewLikeMapper {
 
     @Delete("DELETE FROM community_review_likes WHERE user_id = #{userId} AND review_id = #{reviewId}")
     int deleteByUserAndReview(@Param("userId") Integer userId, @Param("reviewId") Integer reviewId);
+
+    @Select("<script>" +
+            "SELECT * FROM community_review_likes WHERE user_id = #{userId} AND review_id IN " +
+            "<foreach item='item' index='index' collection='reviewIds' open='(' separator=',' close=')'>" +
+            "#{item}" +
+            "</foreach>" +
+            "</script>")
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "userId", column = "user_id"),
+            @Result(property = "reviewId", column = "review_id"),
+            @Result(property = "type", column = "type"),
+            @Result(property = "createdAt", column = "created_at")
+    })
+    List<CommunityReviewLike> findByUserAndReviewIds(@Param("userId") Integer userId, @Param("reviewIds") List<Integer> reviewIds);
 }

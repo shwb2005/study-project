@@ -41,7 +41,12 @@ const sendCode = () => {
   }, (message) => {
     ElMessage.success(message)
     coldTime.value = 60
-    setInterval(() => coldTime.value--, 1000)
+    const timer = setInterval(() => {
+      coldTime.value--
+      if (coldTime.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
   })
 }
 

@@ -255,6 +255,21 @@ public class CourseController {
         }
     }
 
+    @GetMapping("/community/like-statuses")
+    public RestBean<List<CommunityReviewLike>> getLikeStatuses(@RequestParam List<Integer> reviewIds,
+                                                               HttpSession session) {
+        try {
+            AccountUser user = (AccountUser) session.getAttribute("account");
+            if (user == null) {
+                return RestBean.success(Collections.emptyList());
+            }
+            List<CommunityReviewLike> likes = communityReviewLikeMapper.findByUserAndReviewIds(user.getId(), reviewIds);
+            return RestBean.success(likes);
+        } catch (Exception e) {
+            return RestBean.success(Collections.emptyList());
+        }
+    }
+
     @PostMapping("/community/reply")
     public RestBean<String> replyReview(@RequestParam Integer reviewId,
                                         @RequestParam String content,
@@ -290,7 +305,7 @@ public class CourseController {
             if (parentReplyId != null) {
                 reply.setParentReplyId(parentReplyId);
                 // 获取被回复的回复信息
-                List<CommunityReply> allReplies = communityReplyMapper.findByReviewId(reviewId);
+                List<CommunityReply> allReplies = communityReplyMapper.findByReviewId(reviewId, user.getId());
                 CommunityReply parentReply = allReplies.stream()
                         .filter(r -> r.getId().equals(parentReplyId))
                         .findFirst()
@@ -311,9 +326,12 @@ public class CourseController {
     }
 
     @GetMapping("/community/replies")
-    public RestBean<List<CommunityReply>> getReplies(@RequestParam Integer reviewId) {
+    public RestBean<List<CommunityReply>> getReplies(@RequestParam Integer reviewId,
+                                                      HttpSession session) {
         try {
-            List<CommunityReply> replies = communityReplyMapper.findByReviewId(reviewId);
+            AccountUser user = (AccountUser) session.getAttribute("account");
+            Integer currentUserId = (user != null) ? user.getId() : null;
+            List<CommunityReply> replies = communityReplyMapper.findByReviewId(reviewId, currentUserId);
             return RestBean.success(replies);
         } catch (Exception e) {
             logger.error("获取回复失败", e);
@@ -388,6 +406,57 @@ public class CourseController {
             return RestBean.success(like);
         } catch (Exception e) {
             return RestBean.success(null);
+        }
+    }
+
+    @GetMapping("/community/reply/like-statuses")
+    public RestBean<List<CommunityReplyLike>> getReplyLikeStatuses(@RequestParam List<Integer> replyIds,
+                                                                    HttpSession session) {
+        try {
+            AccountUser user = (AccountUser) session.getAttribute("account");
+            if (user == null) {
+                return RestBean.success(Collections.emptyList());
+            }
+            List<CommunityReplyLike> likes = communityReplyLikeMapper.findByUserAndReplyIds(user.getId(), replyIds);
+            return RestBean.success(likes);
+        } catch (Exception e) {
+            return RestBean.success(Collections.emptyList());
+        }
+    }
+
+    @PostMapping("/community/reply/delete")
+    public RestBean<String> deleteReply(@RequestParam Integer replyId,
+                                        HttpSession session) {
+        try {
+            AccountUser user = (AccountUser) session.getAttribute("account");
+            if (user == null) {
+                return RestBean.failure(401, "请先登录");
+            }
+
+            // 查询回复信息，验证权限
+            CommunityReply reply = communityReplyMapper.findWithReviewUserById(replyId);
+            if (reply == null) {
+                return RestBean.failure(404, "回复不存在");
+            }
+
+            // 权限验证：回复作者 或 评价作者 可以删除
+            if (!reply.getUserId().equals(user.getId()) && !reply.getReviewUserId().equals(user.getId())) {
+                return RestBean.failure(403, "无权删除");
+            }
+
+            // 先将有子回复的 parent_reply_id 置为 null
+            communityReplyMapper.nullifyParentReplyId(replyId);
+
+            // 删除回复
+            int rows = communityReplyMapper.deleteReply(replyId);
+            if (rows > 0) {
+                return RestBean.success("删除成功");
+            } else {
+                return RestBean.failure(500, "删除失败");
+            }
+        } catch (Exception e) {
+            logger.error("删除回复失败", e);
+            return RestBean.failure(500, "删除失败");
         }
     }
 

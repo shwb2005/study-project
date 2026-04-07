@@ -11,11 +11,13 @@ public class CommunityReply {
     private String content;
     private Boolean isAnonymous;
     private Boolean isAuthorReply;
+    private Boolean canDelete;
     private Integer likeCount;
     private Integer dislikeCount;
     private Integer parentReplyId;
     private Integer replyToUserId;
     private String replyToUsername;
+    private Integer reviewUserId;
     private LocalDateTime createdAt;
 
     public CommunityReply() {}
@@ -36,6 +38,8 @@ public class CommunityReply {
     public void setIsAnonymous(Boolean isAnonymous) { this.isAnonymous = isAnonymous; }
     public Boolean getIsAuthorReply() { return isAuthorReply; }
     public void setIsAuthorReply(Boolean isAuthorReply) { this.isAuthorReply = isAuthorReply; }
+    public Boolean getCanDelete() { return canDelete; }
+    public void setCanDelete(Boolean canDelete) { this.canDelete = canDelete; }
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
     public Integer getDislikeCount() { return dislikeCount; }
@@ -46,6 +50,8 @@ public class CommunityReply {
     public void setReplyToUserId(Integer replyToUserId) { this.replyToUserId = replyToUserId; }
     public String getReplyToUsername() { return replyToUsername; }
     public void setReplyToUsername(String replyToUsername) { this.replyToUsername = replyToUsername; }
+    public Integer getReviewUserId() { return reviewUserId; }
+    public void setReviewUserId(Integer reviewUserId) { this.reviewUserId = reviewUserId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

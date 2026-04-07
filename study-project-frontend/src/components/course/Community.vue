@@ -1,7 +1,7 @@
 <script setup>
 import {ref, computed, onMounted} from 'vue'
 import {get, post} from '@/net'
-import {ElMessage} from 'element-plus'
+import {ElMessage, ElMessageBox} from 'element-plus'
 
 const reviews = ref([])
 const likeStatusMap = ref({})   // { reviewId: type(1 or 2) }
@@ -50,6 +50,22 @@ const avgRating = computed(() => {
 const loadReviews = () => {
   get('/api/course/community', (data) => {
     reviews.value = data || []
+    // 加载完成后，加载点赞状态
+    loadLikeStatuses()
+  })
+}
+
+const loadLikeStatuses = () => {
+  if (reviews.value.length === 0) return
+  const reviewIds = reviews.value.map(r => r.id)
+  get(`/api/course/community/like-statuses?reviewIds=${reviewIds.join(',')}`, (likes) => {
+    if (Array.isArray(likes)) {
+      likes.forEach(like => {
+        if (like && like.reviewId && like.type) {
+          likeStatusMap.value[like.reviewId] = like.type
+        }
+      })
+    }
   })
 }
 
@@ -82,6 +98,22 @@ const loadReplies = (reviewId) => {
   get(`/api/course/community/replies?reviewId=${reviewId}`, (data) => {
     repliesMap.value[reviewId] = data || []
     showReplies.value[reviewId] = true
+    // 加载回复的点赞状态
+    loadRepliesLikeStatuses(data || [])
+  })
+}
+
+const loadRepliesLikeStatuses = (replies) => {
+  if (replies.length === 0) return
+  const replyIds = replies.map(r => r.id)
+  get(`/api/course/community/reply/like-statuses?replyIds=${replyIds.join(',')}`, (likes) => {
+    if (Array.isArray(likes)) {
+      likes.forEach(like => {
+        if (like && like.replyId && like.type) {
+          replyLikeStatusMap.value[like.replyId] = like.type
+        }
+      })
+    }
   })
 }
 
@@ -137,6 +169,22 @@ const toggleReplyLike = (replyId, type) => {
 const clickReplyTo = (reviewId, replyId, userId, username) => {
   replyToMap.value[reviewId] = {replyId, userId, username}
   showReplyInput.value[reviewId] = true
+}
+
+const deleteReply = (reviewId, replyId) => {
+  ElMessageBox.confirm('确定要删除这条回复吗？', '删除确认', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    post('/api/course/community/reply/delete', {replyId}, () => {
+      ElMessage.success('删除成功')
+      // 从列表中移除该回复
+      repliesMap.value[reviewId] = repliesMap.value[reviewId].filter(r => r.id !== replyId)
+    }, () => {
+      ElMessage.error('删除失败')
+    })
+  }).catch(() => {})
 }
 
 onMounted(() => {
@@ -317,6 +365,12 @@ onMounted(() => {
                       <path d="M18 2l-4 16-5-5-5-1z"/>
                     </svg>
                     <span>回复</span>
+                  </button>
+                  <button v-if="reply.canDelete" class="reply-act-btn reply-delete" @click="deleteReply(review.id, reply.id)">
+                    <svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                    <span>删除</span>
                   </button>
                 </div>
               </div>
@@ -597,6 +651,11 @@ onMounted(() => {
 
 .reply-act-btn.reply-dislike.active {
   background: rgba(255,59,48,0.08);
+  color: #ff3b30;
+}
+
+.reply-act-btn.reply-delete:hover {
+  background: rgba(255,59,48,0.1);
   color: #ff3b30;
 }
 
