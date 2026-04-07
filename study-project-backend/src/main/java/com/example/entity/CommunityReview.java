@@ -12,6 +12,8 @@ public class CommunityReview {
     private Integer rating;
     private String review;
     private Boolean isAnonymous;
+    private Integer likeCount;
+    private Integer dislikeCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -88,6 +90,22 @@ public class CommunityReview {
 
     public void setIsAnonymous(Boolean isAnonymous) {
         this.isAnonymous = isAnonymous;
+    }
+
+    public Integer getLikeCount() {
+        return likeCount;
+    }
+
+    public void setLikeCount(Integer likeCount) {
+        this.likeCount = likeCount;
+    }
+
+    public Integer getDislikeCount() {
+        return dislikeCount;
+    }
+
+    public void setDislikeCount(Integer dislikeCount) {
+        this.dislikeCount = dislikeCount;
     }
 
     public LocalDateTime getCreatedAt() {

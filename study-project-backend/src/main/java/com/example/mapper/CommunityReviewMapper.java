@@ -19,6 +19,8 @@ public interface CommunityReviewMapper {
             @Result(property = "rating", column = "rating"),
             @Result(property = "review", column = "review"),
             @Result(property = "isAnonymous", column = "is_anonymous"),
+            @Result(property = "likeCount", column = "like_count"),
+            @Result(property = "dislikeCount", column = "dislike_count"),
             @Result(property = "createdAt", column = "created_at"),
             @Result(property = "updatedAt", column = "updated_at")
     })
@@ -31,4 +33,10 @@ public interface CommunityReviewMapper {
             "username = VALUES(username), avatar = VALUES(avatar), " +
             "course_name = VALUES(course_name), is_anonymous = VALUES(is_anonymous), updated_at = NOW()")
     int insertOrUpdate(CommunityReview review);
+
+    @Update("UPDATE community_reviews SET like_count = like_count + #{delta} WHERE id = #{reviewId}")
+    int updateLikeCount(@Param("reviewId") Integer reviewId, @Param("delta") int delta);
+
+    @Update("UPDATE community_reviews SET dislike_count = dislike_count + #{delta} WHERE id = #{reviewId}")
+    int updateDislikeCount(@Param("reviewId") Integer reviewId, @Param("delta") int delta);
 }
