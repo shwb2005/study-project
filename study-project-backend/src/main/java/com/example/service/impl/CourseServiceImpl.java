@@ -50,14 +50,14 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public List<UserCourseRelation> getUserCourses(Integer userId) {
-        logger.info("开始查询用户 {} 的课程", userId);
+//        logger.info("开始查询用户 {} 的课程", userId);
 
         try {
             List<UserCourseRelation> relations = userCourseRelationMapper.findByUserIdWithCourse(userId);
-            logger.info("查询到 {} 条课程记录", relations.size());
+//            logger.info("查询到 {} 条课程记录", relations.size());
             return relations;
         } catch (Exception e) {
-            logger.error("查询用户课程失败: {}", e.getMessage(), e);
+//            logger.error("查询用户课程失败: {}", e.getMessage(), e);
             return List.of();
         }
     }
@@ -71,7 +71,7 @@ public class CourseServiceImpl implements CourseService {
                 return false; // 已经报名
             }
 
-            // 获取课程信息，设置最大签到次数
+            //更新课程人数
             Course course = courseMapper.findById(courseId);
             //更新课程人数
             course.setStudentsCount(course.getStudentsCount()+1);

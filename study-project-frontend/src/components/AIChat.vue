@@ -1,7 +1,7 @@
 <script setup>
 import { ref, nextTick, computed } from 'vue'
 import { ElMessage } from "element-plus"
-import { post } from "@/net"
+import axios from "axios"
 
 const messages = ref([
   {
@@ -52,11 +52,17 @@ const sendMessage = async (customMessage = null) => {
   loading.value = true
   scrollToBottom()
 
-  post('/api/ai/chat', { message: messageToSend },
-    (response) => {
-      const responseData = typeof response === 'string' ? JSON.parse(response) : response
-      const responseContent = responseData.response || responseData.message || response
-
+  try {
+    const formData = new URLSearchParams()
+    formData.append('message', messageToSend)
+    const res = await axios.post('/api/ai/chat', formData, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      withCredentials: true,
+      timeout: 120000
+    })
+    const data = res.data
+    if (data.success) {
+      const responseContent = String(data.message).replace(/\n/g, '<br>')
       const hasMore = responseContent.includes('还有') && responseContent.includes('未显示')
       messages.value.push({
         role: 'assistant',
@@ -64,30 +70,25 @@ const sendMessage = async (customMessage = null) => {
         hasMore: hasMore,
         timestamp: formatTime(new Date())
       })
-      loading.value = false
-      scrollToBottom()
-    },
-    (errorMessage) => {
-      ElMessage.error(errorMessage || '发送失败，请稍后重试')
+    } else {
+      ElMessage.error(data.message || '发送失败')
       messages.value.push({
         role: 'assistant',
         content: '抱歉，我现在无法回答你的问题，请稍后再试。',
         timestamp: formatTime(new Date())
       })
-      loading.value = false
-      scrollToBottom()
-    },
-    (error) => {
-      ElMessage.error('网络错误，请稍后重试')
-      messages.value.push({
-        role: 'assistant',
-        content: '抱歉，网络连接出现问题，请稍后再试。',
-        timestamp: formatTime(new Date())
-      })
-      loading.value = false
-      scrollToBottom()
     }
-  )
+  } catch (error) {
+    ElMessage.error(error.message || '网络错误，请稍后重试')
+    messages.value.push({
+      role: 'assistant',
+      content: '抱歉，网络连接出现问题，请稍后再试。',
+      timestamp: formatTime(new Date())
+    })
+  } finally {
+    loading.value = false
+    scrollToBottom()
+  }
 }
 
 const handleKeyPress = (e) => {
@@ -193,7 +194,7 @@ const toggleActions = (index) => {
           <!-- Bubble -->
           <div class="msg-bubble-wrap">
             <div class="msg-bubble" :class="message.role">
-              <p class="msg-text">{{ message.content }}</p>
+              <p class="msg-text" v-html="message.content"></p>
             </div>
             <div v-if="message.hasMore" @click="showAll(index)" class="expand-btn">
               展开全部
