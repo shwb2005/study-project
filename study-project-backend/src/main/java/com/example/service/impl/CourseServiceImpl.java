@@ -3,6 +3,9 @@ package com.example.service.impl;
 import com.example.entity.CommunityReview;
 import com.example.entity.Course;
 import com.example.entity.UserCourseRelation;
+import com.example.mapper.CommunityReplyLikeMapper;
+import com.example.mapper.CommunityReplyMapper;
+import com.example.mapper.CommunityReviewLikeMapper;
 import com.example.mapper.CommunityReviewMapper;
 import com.example.mapper.CourseMapper;
 import com.example.mapper.UserCourseRelationMapper;
@@ -37,6 +40,15 @@ public class CourseServiceImpl implements CourseService {
 
     @Resource
     private UserProfileMapper userProfileMapper;
+
+    @Resource
+    private CommunityReplyMapper communityReplyMapper;
+
+    @Resource
+    private CommunityReplyLikeMapper communityReplyLikeMapper;
+
+    @Resource
+    private CommunityReviewLikeMapper communityReviewLikeMapper;
 
     @Override
     public List<Course> getAllCourses() {
@@ -99,6 +111,27 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public boolean unenrollCourse(Integer userId, Integer courseId) {
         try {
+            // 级联删除社区评价及相关数据
+            try {
+                Integer reviewId = communityReviewMapper.findIdByUserIdAndCourseId(userId, courseId);
+                if (reviewId != null) {
+                    // 删除回复的点赞
+                    List<Integer> replyIds = communityReplyMapper.findIdsByReviewId(reviewId);
+                    if (replyIds != null && !replyIds.isEmpty()) {
+                        communityReplyLikeMapper.deleteByReplyIds(replyIds);
+                    }
+                    // 删除回复
+                    communityReplyMapper.deleteByReviewId(reviewId);
+                    // 删除评价的点赞
+                    communityReviewMapper.deleteLikesByReviewId(reviewId);
+                    // 删除评价
+                    communityReviewMapper.deleteByUserIdAndCourseId(userId, courseId);
+                    logger.info("级联删除评价成功 - userId: {}, courseId: {}, reviewId: {}", userId, courseId, reviewId);
+                }
+            } catch (Exception e) {
+                logger.error("级联删除评价失败（不影响退课）: {}", e.getMessage(), e);
+            }
+
             //更新课程人数
             Course course = courseMapper.findById(courseId);
             course.setStudentsCount(course.getStudentsCount()-1);

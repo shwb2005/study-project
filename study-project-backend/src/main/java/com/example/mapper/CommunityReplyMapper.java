@@ -62,4 +62,10 @@ public interface CommunityReplyMapper {
 
     @Delete("DELETE FROM community_replies WHERE id = #{replyId}")
     int deleteReply(@Param("replyId") Integer replyId);
+
+    @Select("SELECT id FROM community_replies WHERE review_id = #{reviewId}")
+    List<Integer> findIdsByReviewId(@Param("reviewId") Integer reviewId);
+
+    @Delete("DELETE FROM community_replies WHERE review_id = #{reviewId}")
+    int deleteByReviewId(@Param("reviewId") Integer reviewId);
 }

@@ -86,4 +86,13 @@ public interface CommunityReviewMapper {
 
     @Delete("DELETE FROM community_reviews WHERE id = #{reviewId}")
     int deleteReview(@Param("reviewId") Integer reviewId);
+
+    @Select("SELECT id FROM community_reviews WHERE user_id = #{userId} AND course_id = #{courseId}")
+    Integer findIdByUserIdAndCourseId(@Param("userId") Integer userId, @Param("courseId") Integer courseId);
+
+    @Delete("DELETE FROM community_reviews WHERE user_id = #{userId} AND course_id = #{courseId}")
+    int deleteByUserIdAndCourseId(@Param("userId") Integer userId, @Param("courseId") Integer courseId);
+
+    @Delete("DELETE FROM community_review_likes WHERE review_id = #{reviewId}")
+    int deleteLikesByReviewId(@Param("reviewId") Integer reviewId);
 }

@@ -39,4 +39,12 @@ public interface CommunityReplyLikeMapper {
             @Result(property = "createdAt", column = "created_at")
     })
     List<CommunityReplyLike> findByUserAndReplyIds(@Param("userId") Integer userId, @Param("replyIds") List<Integer> replyIds);
+
+    @Delete("<script>" +
+            "DELETE FROM community_reply_likes WHERE reply_id IN " +
+            "<foreach item='item' index='index' collection='replyIds' open='(' separator=',' close=')'>" +
+            "#{item}" +
+            "</foreach>" +
+            "</script>")
+    int deleteByReplyIds(@Param("replyIds") List<Integer> replyIds);
 }
