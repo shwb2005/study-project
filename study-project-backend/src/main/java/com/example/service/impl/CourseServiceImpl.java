@@ -140,6 +140,7 @@ public class CourseServiceImpl implements CourseService {
                     cr.setAvatar(avatar);
                     cr.setCourseId(courseId);
                     cr.setCourseName(course != null ? course.getName() : "");
+                    cr.setType(0);
                     cr.setRating(rating);
                     cr.setReview(review);
                     cr.setIsAnonymous(anonymous);

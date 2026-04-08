@@ -12,6 +12,7 @@ public class CommunityReview {
     private Integer rating;
     private String review;
     private Boolean isAnonymous;
+    private Integer type; // 0=课程评价 1=讨论
     private Integer likeCount;
     private Integer dislikeCount;
     private LocalDateTime createdAt;
@@ -90,6 +91,14 @@ public class CommunityReview {
 
     public void setIsAnonymous(Boolean isAnonymous) {
         this.isAnonymous = isAnonymous;
+    }
+
+    public Integer getType() {
+        return type;
+    }
+
+    public void setType(Integer type) {
+        this.type = type;
     }
 
     public Integer getLikeCount() {

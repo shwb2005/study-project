@@ -168,18 +168,68 @@ public class CourseController {
     }
 
     @GetMapping("/community")
-    public RestBean<List<CommunityReview>> getCommunityReviews() {
+    public RestBean<List<CommunityReview>> getCommunityReviews(
+            @RequestParam(defaultValue = "all") String type) {
         try {
-            List<CommunityReview> reviews = communityReviewMapper.findAll();
-            logger.info("社区评价查询结果: {} 条记录", reviews.size());
-            for (CommunityReview r : reviews) {
-                logger.info("评价详情: id={}, user={}, course={}, rating={}, review={}",
-                        r.getId(), r.getUsername(), r.getCourseName(), r.getRating(), r.getReview());
+            List<CommunityReview> reviews;
+            if ("discussion".equals(type)) {
+                reviews = communityReviewMapper.findDiscussions();
+            } else if ("review".equals(type)) {
+                reviews = communityReviewMapper.findReviews();
+            } else {
+                reviews = communityReviewMapper.findAll();
             }
+            logger.info("社区查询结果 (type={}): {} 条记录", type, reviews.size());
             return RestBean.success(reviews);
         } catch (Exception e) {
-            logger.error("获取社区评价失败", e);
+            logger.error("获取社区数据失败", e);
             return RestBean.failure(500, Collections.emptyList());
+        }
+    }
+
+    @PostMapping("/community/discussion")
+    public RestBean<String> createDiscussion(@RequestParam Integer courseId,
+                                             @RequestParam String content,
+                                             @RequestParam(defaultValue = "false") boolean anonymous,
+                                             HttpSession session) {
+        try {
+            AccountUser user = (AccountUser) session.getAttribute("account");
+            if (user == null) {
+                return RestBean.failure(401, "请先登录");
+            }
+
+            Course course = courseService.getCourseById(courseId);
+            if (course == null) {
+                return RestBean.failure(404, "课程不存在");
+            }
+
+            String username = "匿名用户";
+            String avatar = null;
+            if (!anonymous) {
+                var account = userMapper.findWithProfileById(user.getId());
+                username = (account != null) ? account.getUsername() : "";
+                var profile = userProfileMapper.findByUserId(user.getId());
+                if (profile != null) {
+                    avatar = profile.getAvatar();
+                }
+            }
+
+            CommunityReview discussion = new CommunityReview();
+            discussion.setUserId(user.getId());
+            discussion.setUsername(username);
+            discussion.setAvatar(avatar);
+            discussion.setCourseId(courseId);
+            discussion.setCourseName(course.getName());
+            discussion.setType(1);
+            discussion.setRating(0);
+            discussion.setReview(content);
+            discussion.setIsAnonymous(anonymous);
+
+            communityReviewMapper.insertDiscussion(discussion);
+            return RestBean.success("发布成功");
+        } catch (Exception e) {
+            logger.error("发布讨论失败", e);
+            return RestBean.failure(500, "发布失败");
         }
     }
 
