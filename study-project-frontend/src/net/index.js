@@ -1,5 +1,5 @@
 import axios from "axios";
-import {ElMessage} from "element-plus";
+import {ElMessage} from "element-plus"
 
 
 const defaultError =()=>ElMessage.error('发生了一些错误，请联系管理员')
@@ -14,7 +14,8 @@ function post(url,data,success,failure=defaultFailure,error = defaultError){
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        withCredentials: true
+        withCredentials: true,
+        timeout: 120000
         }
         ).then(({data})=>{
             if(data.success)
@@ -23,9 +24,11 @@ function post(url,data,success,failure=defaultFailure,error = defaultError){
                 failure(data.message, data.status)
     }).catch(error)
 }
+
 function get(url,success,failure=defaultFailure,error = defaultError){
     axios.get(url,{
-            withCredentials: true
+            withCredentials: true,
+            timeout: 120000
         }
     ).then(({data})=>{
         if(data.success)
