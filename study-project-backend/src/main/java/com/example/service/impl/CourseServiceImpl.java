@@ -73,10 +73,10 @@ public class CourseServiceImpl implements CourseService {
 
             //更新课程人数
             Course course = courseMapper.findById(courseId);
+            //更新课程人数
             course.setStudentsCount(course.getStudentsCount()+1);
             courseMapper.updateCourse(course);
 
-            // 获取课程信息，设置最大签到次数
             Integer maxCheckInCount = (course != null && course.getMaxCheckInCount() != null)
                     ? course.getMaxCheckInCount() : 12;
 
@@ -103,6 +103,7 @@ public class CourseServiceImpl implements CourseService {
             Course course = courseMapper.findById(courseId);
             course.setStudentsCount(course.getStudentsCount()-1);
             courseMapper.updateCourse(course);
+
             return userCourseRelationMapper.deleteByUserIdAndCourseId(userId, courseId) > 0;
         } catch (Exception e) {
             logger.error("取消报名失败: {}", e.getMessage(), e);

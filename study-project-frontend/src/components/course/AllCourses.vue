@@ -1,7 +1,7 @@
 <script setup>
-import {ref, onMounted, onUnmounted} from 'vue'
-import {get, post} from "@/net"
-import {ElMessage} from "element-plus"
+import { ref, onMounted, onUnmounted } from 'vue'
+import { get, post } from "@/net"
+import { ElMessage } from "element-plus"
 
 const courses = ref([])
 const myCourses = ref([])
@@ -33,7 +33,7 @@ const loadMyCourses = () => {
 const isEnrolled = (courseId) => myCourses.value.some(c => c.courseId === courseId)
 
 const enrollCourse = (courseId) => {
-  post('/api/course/enroll', {courseId}, () => {
+  post('/api/course/enroll', { courseId }, () => {
     ElMessage.success('报名成功')
     loadMyCourses()
   }, () => {
