@@ -29,6 +29,11 @@ public class AuthorizeInterceptor implements HandlerInterceptor {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+            // 检查是否是管理员登录（管理员不走 Spring Security）
+            Object admin = request.getSession().getAttribute("admin");
+            if (admin != null) {
+                return true; // 管理员放行
+            }
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;
         }

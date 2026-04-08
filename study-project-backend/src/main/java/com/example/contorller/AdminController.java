@@ -1,8 +1,10 @@
 package com.example.contorller;
 
 
+import com.example.entity.CommunityReply;
 import com.example.entity.user.Admin;
 import com.example.entity.RestBean;
+import com.example.mapper.CommunityReplyMapper;
 import com.example.service.AdminService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
@@ -20,6 +22,9 @@ public class AdminController {
 
     @Resource
     private AdminService adminService;
+
+    @Resource
+    private CommunityReplyMapper communityReplyMapper;
 
     @PostMapping("/login")
     public RestBean<String> login(@RequestParam String username,
@@ -131,6 +136,32 @@ public class AdminController {
         } catch (Exception e) {
             logger.error("删除管理员失败", e);
             return RestBean.failure(500, "删除管理员失败");
+        }
+    }
+
+    @PostMapping("/community/reply/delete")
+    public RestBean<String> deleteReply(@RequestParam Integer replyId, HttpSession session) {
+        try {
+            Admin admin = (Admin) session.getAttribute("admin");
+            if (admin == null) {
+                return RestBean.failure(401, "请先登录管理员账户");
+            }
+
+            CommunityReply reply = communityReplyMapper.findWithReviewUserById(replyId);
+            if (reply == null) {
+                return RestBean.failure(404, "回复不存在");
+            }
+
+            communityReplyMapper.nullifyParentReplyId(replyId);
+            int rows = communityReplyMapper.deleteReply(replyId);
+            if (rows > 0) {
+                return RestBean.success("删除成功");
+            } else {
+                return RestBean.failure(500, "删除失败");
+            }
+        } catch (Exception e) {
+            logger.error("管理员删除回复失败", e);
+            return RestBean.failure(500, "删除失败");
         }
     }
 }
