@@ -20,7 +20,8 @@ public class WebConfiguration implements WebMvcConfigurer {
                         "/api/auth/**",
                         "/error",
                         "/favicon.ico",
-                        "/api/admin/**"  // 重要：排除所有管理员API
+                        "/api/admin/**",
+                        "/api/course/community"
                 );
     }
 }

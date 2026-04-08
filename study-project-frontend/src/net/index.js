@@ -10,7 +10,7 @@ function post(url,data,success,failure=defaultFailure,error = defaultError){
     for (const key in data) {
         formData.append(key, data[key])
     }
-    axios.post(url,data,{
+    axios.post(url,formData,{
         headers:{
             'Content-Type': 'application/x-www-form-urlencoded'
         },

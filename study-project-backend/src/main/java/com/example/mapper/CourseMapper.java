@@ -69,4 +69,93 @@ public interface CourseMapper {
             "max_check_in_count = #{maxCheckInCount} " +
             "WHERE id = #{id}")
     int updateCourse(Course course);
+    
+    @Select("<script>" +
+            "SELECT * FROM courses WHERE status = 'published' " +
+            "<if test='teacherName != null and teacherName != \"\"'>" +
+            "AND teacher_name LIKE CONCAT('%', #{teacherName}, '%') " +
+            "</if>" +
+            "ORDER BY " +
+            "<choose>" +
+            "<when test='sortBy == \"rating\"'>rating ${order}</when>" +
+            "<when test='sortBy == \"students\"'>students_count ${order}</when>" +
+            "<when test='sortBy == \"name\"'>name ${order}</when>" +
+            "<when test='sortBy == \"duration\"'>duration ${order}</when>" +
+            "<otherwise>id DESC</otherwise>" +
+            "</choose>" +
+            "<if test='page != null and pageSize != null'>" +
+            "LIMIT #{page}, #{pageSize}" +
+            "</if>" +
+            "</script>")
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "name", column = "name"),
+            @Result(property = "description", column = "description"),
+            @Result(property = "teacherName", column = "teacher_name"),
+            @Result(property = "duration", column = "duration"),
+            @Result(property = "studentsCount", column = "students_count"),
+            @Result(property = "rating", column = "rating"),
+            @Result(property = "status", column = "status"),
+            @Result(property = "maxCheckInCount", column = "max_check_in_count")
+    })
+    List<Course> findWithOptions(@Param("sortBy") String sortBy, 
+                                 @Param("order") String order, 
+                                 @Param("teacherName") String teacherName,
+                                 @Param("page") Integer page, 
+                                 @Param("pageSize") Integer pageSize);
+    
+    @Select("SELECT DISTINCT teacher_name FROM courses WHERE status = 'published' ORDER BY teacher_name")
+    List<String> findAllTeachers();
+    
+    @Select("SELECT * FROM courses WHERE status = 'published' AND teacher_name LIKE CONCAT('%', #{teacherName}, '%') ORDER BY id DESC")
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "name", column = "name"),
+            @Result(property = "description", column = "description"),
+            @Result(property = "teacherName", column = "teacher_name"),
+            @Result(property = "duration", column = "duration"),
+            @Result(property = "studentsCount", column = "students_count"),
+            @Result(property = "rating", column = "rating"),
+            @Result(property = "status", column = "status"),
+            @Result(property = "maxCheckInCount", column = "max_check_in_count")
+    })
+    List<Course> findByTeacherName(String teacherName);
+    
+    @Select("SELECT * FROM courses WHERE status = 'published' ORDER BY id DESC LIMIT #{page}, #{pageSize}")
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "name", column = "name"),
+            @Result(property = "description", column = "description"),
+            @Result(property = "teacherName", column = "teacher_name"),
+            @Result(property = "duration", column = "duration"),
+            @Result(property = "studentsCount", column = "students_count"),
+            @Result(property = "rating", column = "rating"),
+            @Result(property = "status", column = "status"),
+            @Result(property = "maxCheckInCount", column = "max_check_in_count")
+    })
+    List<Course> findPaginated(@Param("page") int page, @Param("pageSize") int pageSize);
+    
+    @Select("<script>" +
+            "SELECT * FROM courses WHERE status = 'published' " +
+            "ORDER BY " +
+            "<choose>" +
+            "<when test='sortBy == \"rating\"'>rating ${order}</when>" +
+            "<when test='sortBy == \"students\"'>students_count ${order}</when>" +
+            "<when test='sortBy == \"name\"'>name ${order}</when>" +
+            "<when test='sortBy == \"duration\"'>duration ${order}</when>" +
+            "<otherwise>id DESC</otherwise>" +
+            "</choose>" +
+            "</script>")
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "name", column = "name"),
+            @Result(property = "description", column = "description"),
+            @Result(property = "teacherName", column = "teacher_name"),
+            @Result(property = "duration", column = "duration"),
+            @Result(property = "studentsCount", column = "students_count"),
+            @Result(property = "rating", column = "rating"),
+            @Result(property = "status", column = "status"),
+            @Result(property = "maxCheckInCount", column = "max_check_in_count")
+    })
+    List<Course> findAllSorted(@Param("sortBy") String sortBy, @Param("order") String order);
 }

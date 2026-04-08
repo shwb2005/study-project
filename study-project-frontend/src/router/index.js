@@ -66,6 +66,12 @@ const router = createRouter({
       meta: { requiresAdmin: true }  // 添加管理员权限要求
     },
     {
+      path: '/admin-community',
+      name: 'AdminCommunity',
+      component: () => import('@/view/AdminCommunity.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/index'
     }

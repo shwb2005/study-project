@@ -35,6 +35,12 @@
               <span style="font-size: 15px;">课程管理</span>
             </el-button>
           </div>
+          <div style="margin-top: 20px">
+            <el-button @click="goToCommunity" style="width: 100%; height: 48px;" plain>
+              <i class="el-icon-chat-dot-round" style="margin-right: 10px; font-size: 16px;"></i>
+              <span style="font-size: 15px;">社区管理</span>
+            </el-button>
+          </div>
         </div>
 
         <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #eee;">
@@ -70,6 +76,10 @@ const goToAddAdmin = () => {
 
 const goToAddCourse = () => {
   router.push('/add-course')
+}
+
+const goToCommunity = () => {
+  router.push('/admin-community')
 }
 
 const goBack = () => {
