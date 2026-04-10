@@ -243,12 +243,13 @@ onUnmounted(() => {
           </li>
         </ul>
         <p class="empty" v-else>暂无动态</p>
+      </section>
 
       <!-- AI Chat -->
-      <section class="glass-card">
+      <section class="glass-card ai-chat-section">
         <h2 class="sec-title">AI 智能助手</h2>
         <AIChat />
-      </section>      </section>
+      </section>
 
     </main>
   </div>
@@ -307,7 +308,7 @@ onUnmounted(() => {
 /* ─── Main ─── */
 .main {
   position: relative; z-index: 2;
-  max-width: 620px;
+  max-width: 720px;
   margin: 0 auto;
   padding: 28px 18px 72px;
   display: flex; flex-direction: column; gap: 14px;
@@ -317,12 +318,12 @@ onUnmounted(() => {
 .glass-card {
   border-radius: 20px;
   padding: 22px 22px;
-  background: rgba(255,255,255,0.52);
+  background: rgba(255,255,255,0.62);
   backdrop-filter: saturate(200%) blur(40px);
   -webkit-backdrop-filter: saturate(200%) blur(40px);
   border: 0.5px solid rgba(255,255,255,0.85);
   box-shadow:
-      0 2px 32px rgba(0,0,0,0.10),
+      0 2px 32px rgba(0,0,0,0.08),
       0 0.5px 0 rgba(255,255,255,0.95) inset;
 }
 
@@ -359,11 +360,11 @@ onUnmounted(() => {
 .dot { color: #c7c7cc; }
 
 /* ─── Stats ─── */
-.stats-row { display: flex; align-items: center; padding: 20px 0; }
+.stats-row { display: flex; align-items: center; padding: 18px 0; }
 .stat { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.stat-n { font-size: 32px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
+.stat-n { font-size: 28px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
 .stat-l { font-size: 12px; color: #6e6e73; }
-.vline { width: 0.5px; height: 36px; background: rgba(0,0,0,0.1); }
+.vline { width: 0.5px; height: 32px; background: rgba(0,0,0,0.1); }
 
 /* ─── Section title ─── */
 .sec-title {
@@ -483,6 +484,19 @@ onUnmounted(() => {
 
 .empty { font-size: 15px; color: #86868b; text-align: center; padding: 14px 0; }
 
+/* ─── AI Chat Section ─── */
+.ai-chat-section {
+  padding: 20px;
+}
+
+.ai-chat-section :deep(.card-container) {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  box-shadow: none;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 430px) {
   .main { padding: 16px 14px 52px; }
@@ -491,5 +505,9 @@ onUnmounted(() => {
   .stat-n { font-size: 28px; }
   .navbar { padding: 0 16px; }
   .glass-card { padding: 18px 16px; }
+  .ai-chat-section :deep(.card-container) {
+    width: 100%;
+    min-height: 400px;
+  }
 }
 </style>

@@ -139,293 +139,181 @@ const toggleActions = (index) => {
 </script>
 
 <template>
-  <div class="apple-chat">
+  <div class="card-container">
     <!-- Header -->
-    <div class="chat-head">
-      <div class="head-left">
-        <div class="ai-orb">
-          <div class="orb-core"></div>
-          <div class="orb-ring"></div>
-        </div>
-        <div class="head-info">
-          <span class="head-title">AI 助手</span>
-          <span class="head-status" :class="{ thinking: loading }">
-            <i class="status-dot"></i>
-            {{ loading ? '正在思考' : '在线' }}
-          </span>
-        </div>
+    <div class="card-header">
+      <div class="img-avatar">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3" fill="#fff"/>
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" stroke="#fff" stroke-width="1.5" opacity="0.4"/>
+          <path d="M12 2c2.5 2 4 5.5 4 10s-1.5 8-4 10" stroke="#fff" stroke-width="1.5" opacity="0.4"/>
+          <path d="M12 2c-2.5 2-4 5.5-4 10s1.5 8 4 10" stroke="#fff" stroke-width="1.5" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <span class="text-chat">AI 助手</span>
+        <span class="status-text" :class="{ thinking: loading }">
+          {{ loading ? '正在思考...' : '在线' }}
+        </span>
       </div>
       <button class="clear-btn" @click="clearChat" title="清空聊天">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 6h18"/>
           <path d="M8 6V4.5A1.5 1.5 0 019.5 3h5A1.5 1.5 0 0116 4.5V6"/>
           <path d="M19 6l-.7 12.5A2 2 0 0116.3 20H7.7a2 2 0 01-2-1.5L5 6"/>
-          <path d="M10 11v5"/>
-          <path d="M14 11v5"/>
         </svg>
       </button>
     </div>
 
     <!-- Messages -->
-    <div class="chat-body" ref="chatContainer">
-      <div
-        v-for="(message, index) in messages"
-        :key="index"
-        class="msg"
-        :class="message.role"
-        @mouseenter="toggleActions(index)"
-        @mouseleave="messageActions[index] = false"
-      >
-        <div class="msg-inner" :class="message.role">
-          <!-- Avatar -->
-          <div class="msg-avatar" :class="message.role">
-            <template v-if="message.role === 'assistant'">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="3" fill="currentColor"/>
-                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
-                <path d="M12 2c2.5 2 4 5.5 4 10s-1.5 8-4 10" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
-                <path d="M12 2c-2.5 2-4 5.5-4 10s1.5 8 4 10" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
-                <path d="M2 12h20" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
-              </svg>
-            </template>
-            <template v-else>我</template>
+    <div class="card-body" ref="chatContainer">
+      <div class="messages-container">
+        <div
+          v-for="(message, index) in messages"
+          :key="index"
+          class="message-box"
+          :class="message.role === 'assistant' ? 'left' : 'right'"
+          @mouseenter="toggleActions(index)"
+          @mouseleave="messageActions[index] = false"
+        >
+          <p class="message-text" v-html="message.content"></p>
+          <div v-if="message.hasMore" @click="showAll(index)" class="expand-btn">
+            展开全部
           </div>
-
-          <!-- Bubble -->
-          <div class="msg-bubble-wrap">
-            <div class="msg-bubble" :class="message.role">
-              <p class="msg-text" v-html="message.content"></p>
-            </div>
-            <div v-if="message.hasMore" @click="showAll(index)" class="expand-btn">
-              展开全部
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                <path d="M3 4.5L6 7.5 9 4.5"/>
-              </svg>
-            </div>
-            <div class="msg-meta">
-              <span class="msg-time">{{ message.timestamp }}</span>
-              <div v-if="messageActions[index]" class="msg-actions">
-                <button @click.stop="copyMessage(message.content, index)" class="act-btn" title="复制">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2"/>
-                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                  </svg>
-                </button>
-                <button @click.stop="deleteMessage(index)" class="act-btn del" title="删除">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <path d="M3 6h18"/>
-                    <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
-                  </svg>
-                </button>
-              </div>
+          <div class="message-footer">
+            <span class="message-time">{{ message.timestamp }}</span>
+            <div v-if="messageActions[index]" class="message-actions">
+              <button @click.stop="copyMessage(message.content, index)" class="action-btn" title="复制">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+              </button>
+              <button @click.stop="deleteMessage(index)" class="action-btn del" title="删除">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18"/>
+                  <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                  <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Typing indicator -->
-      <div v-if="loading" class="msg assistant">
-        <div class="msg-inner assistant">
-          <div class="msg-avatar assistant">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="3" fill="currentColor"/>
-              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
-              <path d="M12 2c2.5 2 4 5.5 4 10s-1.5 8-4 10" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
-              <path d="M12 2c-2.5 2-4 5.5-4 10s1.5 8 4 10" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
-              <path d="M2 12h20" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
-            </svg>
-          </div>
-          <div class="msg-bubble-wrap">
-            <div class="msg-bubble assistant typing-bubble">
-              <div class="typing-dots">
-                <span></span><span></span><span></span>
-              </div>
-            </div>
+        <!-- Typing indicator -->
+        <div v-if="loading" class="message-box left typing">
+          <div class="typing-dots">
+            <span></span><span></span><span></span>
           </div>
         </div>
       </div>
-
-      <div class="scroll-anchor"></div>
     </div>
 
     <!-- Input -->
-    <div class="chat-input-area">
-      <div class="input-shell">
+    <div class="message-input">
+      <div class="input-wrapper">
         <textarea
           v-model="inputMessage"
           @keypress="handleKeyPress"
-          placeholder="输入消息…"
-          rows="1"
+          class="message-send"
+          placeholder="输入消息..."
+          rows="2"
           :maxlength="maxLength"
           :disabled="loading"
         ></textarea>
-        <button
-          class="send-btn"
-          @click="sendMessage"
-          :disabled="loading || !inputMessage.trim()"
-          :class="{ active: inputMessage.trim() && !loading }"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-            <path d="M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
+        <span class="char-count">{{ characterCount }} / {{ maxLength }}</span>
       </div>
-      <div class="input-foot">
-        <span class="char-hint">{{ characterCount }} / {{ maxLength }}</span>
-      </div>
+      <button
+        class="button-send"
+        @click="sendMessage"
+        :disabled="loading || !inputMessage.trim()"
+        :class="{ active: inputMessage.trim() && !loading }"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* ═══════════════════════════════════════
-   Apple-inspired Chat Design System
-   ═══════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-.apple-chat {
-  --text-1: #1d1d1f;
-  --text-2: #6e6e73;
-  --text-3: #aeaeb2;
-  --bg: #ffffff;
-  --surface: #f5f5f7;
-  --surface-2: #e8e8ed;
-  --border: rgba(60, 60, 67, 0.08);
-  --border-2: rgba(60, 60, 67, 0.12);
-  --blue: #0071e3;
-  --blue-hover: #0077ed;
-  --red: #ff3b30;
-  --user-bg: #0071e3;
-  --user-text: #fff;
-  --ai-bg: #f5f5f7;
-  --ai-text: #1d1d1f;
-  --radius: 20px;
-
+.card-container {
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin: 20px;
   display: flex;
   flex-direction: column;
-  height: 620px;
-  background: var(--bg);
-  border-radius: 22px;
-  overflow: hidden;
-  border: 0.5px solid var(--border);
+  width: 340px;
+  max-height: 520px;
   box-shadow:
-    0 0 0 0.5px rgba(0,0,0,0.03),
-    0 2px 8px rgba(0,0,0,0.04),
-    0 12px 40px rgba(0,0,0,0.06);
-  font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  position: relative;
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* ── Header ── */
-
-.chat-head {
+/* Header */
+.card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  background: rgba(255,255,255,0.72);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 0.5px solid var(--border);
-  position: relative;
-  z-index: 2;
-}
-
-.head-left {
-  display: flex;
-  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e8e8e8;
   gap: 12px;
 }
 
-.ai-orb {
-  width: 38px;
-  height: 38px;
+.img-avatar {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #1d1d1f, #3a3a3c);
-  position: relative;
+  background: linear-gradient(145deg, #2d2d2d, #4a4a4a);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.orb-core {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  box-shadow: 0 0 10px rgba(102, 126, 234, 0.6);
-  animation: orbPulse 3s ease-in-out infinite;
-}
-
-.orb-ring {
-  position: absolute;
-  inset: 2px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-@keyframes orbPulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(0.85); opacity: 0.7; }
-}
-
-.head-info {
+.header-text {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
-.head-title {
+.text-chat {
+  color: #1a1a1a;
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-1);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.3px;
 }
 
-.head-status {
+.status-text {
   font-size: 11px;
-  color: var(--text-3);
+  color: #8e8e93;
   font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: color 0.3s;
 }
 
-.head-status.thinking {
-  color: var(--blue);
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #34c759;
-  display: inline-block;
-}
-
-.head-status.thinking .status-dot {
-  background: var(--blue);
-  animation: dotBlink 1s ease-in-out infinite;
-}
-
-@keyframes dotBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+.status-text.thinking {
+  color: #007aff;
 }
 
 .clear-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   border: none;
   background: transparent;
-  color: var(--text-3);
+  color: #aeaeb2;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -434,181 +322,126 @@ const toggleActions = (index) => {
 }
 
 .clear-btn:hover {
-  background: var(--surface);
-  color: var(--red);
+  background: #f5f5f7;
+  color: #ff3b30;
 }
 
-/* ── Message Area ── */
-
-.chat-body {
+/* Messages */
+.card-body {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 20px 8px;
-  scroll-behavior: smooth;
+  min-height: 0;
 }
 
-.chat-body::-webkit-scrollbar { width: 4px; }
-.chat-body::-webkit-scrollbar-track { background: transparent; }
-.chat-body::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.1);
+.messages-container {
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.messages-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 2px;
 }
 
-.scroll-anchor { height: 1px; }
-
-.msg {
-  margin-bottom: 18px;
-  animation: msgIn 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+.message-box {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  position: relative;
+  animation: msgIn 0.3s ease;
 }
 
 @keyframes msgIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.msg-inner {
-  display: flex;
-  gap: 10px;
-  max-width: 82%;
+.message-box.left {
+  background-color: #f5f5f7;
+  color: #1a1a1a;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
 }
 
-.msg-inner.user {
-  flex-direction: row-reverse;
-  margin-left: auto;
-}
-
-.msg-inner.assistant {
-  margin-right: auto;
-}
-
-/* ── Avatar ── */
-
-.msg-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 600;
-  margin-top: 2px;
-}
-
-.msg-avatar.user {
-  background: linear-gradient(135deg, #5856d6, #0071e3);
+.message-box.right {
+  background-color: #2d2d2d;
   color: #fff;
-  box-shadow: 0 2px 8px rgba(0,113,227,0.2);
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
 }
 
-.msg-avatar.assistant {
-  background: linear-gradient(145deg, #1d1d1f, #3a3a3c);
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+.message-box.typing {
+  padding: 14px 18px;
 }
 
-/* ── Bubble ── */
-
-.msg-bubble-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.msg-bubble {
-  padding: 10px 16px;
-  border-radius: 18px;
-  position: relative;
-  transition: transform 0.15s ease;
-}
-
-.msg-bubble.user {
-  background: var(--user-bg);
-  color: var(--user-text);
-  border-bottom-right-radius: 6px;
-}
-
-.msg-bubble.assistant {
-  background: var(--ai-bg);
-  color: var(--ai-text);
-  border-bottom-left-radius: 6px;
-}
-
-.msg-bubble:hover {
-  transform: scale(1.005);
-}
-
-.msg-text {
-  font-size: 15px;
-  line-height: 1.55;
-  letter-spacing: -0.01em;
-  word-break: break-word;
+.message-text {
   margin: 0;
+  word-break: break-word;
 }
-
-/* ── Expand ── */
 
 .expand-btn {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 5px 12px;
-  background: var(--surface);
-  color: var(--blue);
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  background: #e8e8ed;
+  color: #007aff;
   border: none;
-  border-radius: 10px;
-  font-size: 12px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  align-self: flex-start;
-  font-family: inherit;
 }
 
 .expand-btn:hover {
-  background: var(--blue);
+  background: #007aff;
   color: #fff;
 }
 
-/* ── Meta ── */
-
-.msg-meta {
+.message-footer {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 4px;
-  opacity: 0;
-  transform: translateY(-2px);
-  transition: all 0.2s ease;
-  pointer-events: none;
+  justify-content: space-between;
+  margin-top: 6px;
+  min-height: 20px;
 }
 
-.msg:hover .msg-meta {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+.message-time {
+  font-size: 10px;
+  color: #aeaeb2;
 }
 
-.msg-time {
-  font-size: 11px;
-  color: var(--text-3);
-  font-weight: 400;
-}
-
-.msg-actions {
+.message-actions {
   display: flex;
   gap: 4px;
 }
 
-.act-btn {
-  width: 26px;
-  height: 26px;
+.action-btn {
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: var(--text-3);
+  color: #8e8e93;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -616,147 +449,135 @@ const toggleActions = (index) => {
   transition: all 0.15s ease;
 }
 
-.act-btn:hover {
-  background: var(--surface);
-  color: var(--text-1);
+.action-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1a1a1a;
 }
 
-.act-btn.del:hover {
-  background: rgba(255,59,48,0.08);
-  color: var(--red);
+.action-btn.del:hover {
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
 }
 
-/* ── Typing ── */
-
-.typing-bubble {
-  padding: 14px 18px !important;
-}
-
+/* Typing dots */
 .typing-dots {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   align-items: center;
 }
 
 .typing-dots span {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--text-3);
-  animation: typeDot 1.4s ease-in-out infinite;
+  background: #8e8e93;
+  animation: typingDot 1.4s ease-in-out infinite;
 }
 
-.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
-.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
-
-@keyframes typeDot {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
-  30% { transform: translateY(-5px); opacity: 1; }
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.15s;
 }
 
-/* ── Input ── */
-
-.chat-input-area {
-  padding: 12px 20px 14px;
-  background: rgba(255,255,255,0.72);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
-  border-top: 0.5px solid var(--border);
-  position: relative;
-  z-index: 2;
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.3s;
 }
 
-.input-shell {
+@keyframes typingDot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* Input */
+.message-input {
   display: flex;
-  align-items: flex-end;
   gap: 10px;
-  background: var(--surface);
-  border-radius: 22px;
-  padding: 6px 6px 6px 18px;
-  border: 1px solid var(--border);
+  padding-top: 14px;
+  border-top: 1px solid #e8e8e8;
+  align-items: flex-end;
+}
+
+.input-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.message-send {
+  width: 100%;
+  padding: 12px 14px;
+  padding-bottom: 20px;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1a1a1a;
+  background: #fafafa;
+  outline: none;
+  resize: none;
   transition: all 0.2s ease;
 }
 
-.input-shell:focus-within {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(0,113,227,0.08);
+.char-count {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-size: 10px;
+  color: #aeaeb2;
+  pointer-events: none;
+}
+
+.message-send::placeholder {
+  color: #aeaeb2;
+}
+
+.message-send:focus {
+  border-color: #007aff;
   background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
-.input-shell textarea {
-  flex: 1;
+.button-send {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   border: none;
-  outline: none;
-  background: transparent;
-  font-size: 15px;
-  font-family: inherit;
-  line-height: 1.5;
-  color: var(--text-1);
-  resize: none;
-  padding: 8px 0;
-  max-height: 100px;
-  overflow-y: auto;
-}
-
-.input-shell textarea::placeholder {
-  color: var(--text-3);
-}
-
-.input-shell textarea::-webkit-scrollbar { width: 3px; }
-.input-shell textarea::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.08);
-  border-radius: 2px;
-}
-
-.send-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: var(--surface-2);
-  color: var(--text-3);
+  background: #e8e8ed;
+  color: #8e8e93;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: all 0.25s ease;
 }
 
-.send-btn.active {
-  background: var(--blue);
+.button-send.active {
+  background: #007aff;
   color: #fff;
-  box-shadow: 0 2px 10px rgba(0,113,227,0.25);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
 }
 
-.send-btn.active:hover {
-  background: var(--blue-hover);
-  transform: scale(1.06);
+.button-send.active:hover {
+  background: #0066d6;
+  transform: scale(1.05);
 }
 
-.send-btn:disabled {
+.button-send:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
-.input-foot {
-  display: flex;
-  justify-content: flex-end;
-  padding: 6px 6px 0;
-}
-
-.char-hint {
-  font-size: 11px;
-  color: var(--text-3);
-  font-weight: 400;
-  letter-spacing: 0.01em;
-}
-
-/* ── Responsive ── */
-
-@media (max-width: 768px) {
-  .apple-chat { border-radius: 16px; height: 100vh; }
-  .chat-body { padding: 16px 14px 8px; }
-  .msg-inner { max-width: 88%; }
-  .chat-input-area { padding: 10px 14px 12px; }
+/* Responsive */
+@media (max-width: 400px) {
+  .card-container {
+    width: 100%;
+    margin: 10px 0;
+    border-radius: 12px;
+  }
 }
 </style>
