@@ -1,17 +1,59 @@
 <template>
   <div class="container">
     <div class="left-panel">
-      <div class="image-container">
-        <img
-            src="@/assets/images/1.jpeg"
-            alt="学习平台"
-            class="full-image"
-        >
-        <div class="image-overlay"></div>
-        <div class="image-content">
-          <div class="main-title">学习平台</div>
-          <div class="subtitle">智慧学习<br>成就未来</div>
+      <div class="space-bg">
+        <div class="box-of-star1">
+          <div class="star star-position1"></div>
+          <div class="star star-position2"></div>
+          <div class="star star-position3"></div>
+          <div class="star star-position4"></div>
+          <div class="star star-position5"></div>
+          <div class="star star-position6"></div>
+          <div class="star star-position7"></div>
         </div>
+        <div class="box-of-star2">
+          <div class="star star-position1"></div>
+          <div class="star star-position2"></div>
+          <div class="star star-position3"></div>
+          <div class="star star-position4"></div>
+          <div class="star star-position5"></div>
+          <div class="star star-position6"></div>
+          <div class="star star-position7"></div>
+        </div>
+        <div class="box-of-star3">
+          <div class="star star-position1"></div>
+          <div class="star star-position2"></div>
+          <div class="star star-position3"></div>
+          <div class="star star-position4"></div>
+          <div class="star star-position5"></div>
+          <div class="star star-position6"></div>
+          <div class="star star-position7"></div>
+        </div>
+        <div class="box-of-star4">
+          <div class="star star-position1"></div>
+          <div class="star star-position2"></div>
+          <div class="star star-position3"></div>
+          <div class="star star-position4"></div>
+          <div class="star star-position5"></div>
+          <div class="star star-position6"></div>
+          <div class="star star-position7"></div>
+        </div>
+        <div class="astronaut">
+          <div class="schoolbag"></div>
+          <div class="body"></div>
+          <div class="head">
+            <div class="arm arm-left"></div>
+            <div class="arm arm-right"></div>
+          </div>
+          <div class="arm arm-left"></div>
+          <div class="arm arm-right"></div>
+          <div class="leg leg-left"></div>
+          <div class="leg leg-right"></div>
+        </div>
+      </div>
+      <div class="image-content">
+        <div class="main-title">学习平台</div>
+        <div class="subtitle">智慧学习<br>成就未来</div>
       </div>
     </div>
 
@@ -44,6 +86,15 @@
             </svg>
             <span>个人资料</span>
           </button>
+
+          <button class="action-btn primary" @click="router.push('/announcements')" style="position: relative;">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13.73 21a2 2 0 01-3.46 0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>通知公告</span>
+            <span v-if="unreadCount > 0" class="badge">{{ unreadCount }}</span>
+          </button>
         </div>
 
         <div class="divider"></div>
@@ -65,6 +116,26 @@
         </div>
       </div>
     </div>
+    <!-- 新公告弹窗 -->
+    <div class="notice-overlay" v-if="showNoticeDialog" @click.self="onNoticeDialogClose">
+      <div class="brutalist-card">
+        <div class="brutalist-card__header">
+          <div class="brutalist-card__icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          </div>
+          <div class="brutalist-card__alert">新通知</div>
+        </div>
+        <div class="brutalist-card__message" v-if="latestAnnouncement">
+          <div style="font-size:1rem;font-weight:900;margin-bottom:4px;">{{ latestAnnouncement.title }}</div>
+          <div>{{ latestAnnouncement.content }}</div>
+          <div style="font-size:0.75rem;color:#555;margin-top:4px;">{{ formatNoticeDate(latestAnnouncement.createdAt) }}</div>
+        </div>
+        <div class="brutalist-card__actions">
+          <button class="brutalist-card__button brutalist-card__button--read" @click="onNoticeDialogClose">已读</button>
+          <button class="brutalist-card__button brutalist-card__button--mark" @click="router.push('/announcements'); onNoticeDialogClose()">查看全部公告</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -73,14 +144,53 @@ import { useRouter } from 'vue-router'
 import { get } from "@/net";
 import { ElMessage } from "element-plus";
 import { useStore } from "@/stores";
-import { reactive } from 'vue';
+import { ref, computed } from 'vue';
 
 const store = useStore()
 const router = useRouter()
 
-const form = reactive({
-  remember: false
+const announcements = ref([])
+const unreadCount = ref(0)
+const showNoticeDialog = ref(false)
+
+const lastSeenKey = computed(() => 'announcement_last_seen_' + (store.auth.user?.id || 'anon'))
+
+const unseenAnnouncements = computed(() => {
+  const lastSeen = localStorage.getItem(lastSeenKey.value)
+  if (!lastSeen) return announcements.value
+  const seen = new Date(lastSeen).getTime()
+  return announcements.value.filter(a => new Date(a.createdAt).getTime() > seen)
 })
+
+const latestAnnouncement = computed(() => unseenAnnouncements.value[0] || null)
+
+const formatNoticeDate = (s) => {
+  if (!s) return ''
+  try { return new Date(s).toLocaleString('zh-CN') } catch { return s }
+}
+
+const loadAnnouncements = () => {
+  get('/api/announcement/all', data => {
+    announcements.value = data || []
+    const lastSeen = localStorage.getItem(lastSeenKey.value)
+    if (lastSeen) {
+      const seen = new Date(lastSeen).getTime()
+      unreadCount.value = announcements.value.filter(a => new Date(a.createdAt).getTime() > seen).length
+    } else {
+      unreadCount.value = announcements.value.length
+    }
+    if (unreadCount.value > 0) {
+      showNoticeDialog.value = true
+    }
+  }, () => { announcements.value = [] })
+}
+
+const onNoticeDialogClose = () => {
+  unreadCount.value = 0
+  localStorage.setItem(lastSeenKey.value, new Date().toISOString())
+}
+
+loadAnnouncements()
 
 const logout = () => {
   get('/api/auth/logout', (message) => {
@@ -97,10 +207,6 @@ const goToCourses = () => {
 const goToProfile = () => {
   router.push('/profile')
 }
-
-const goToIndex = () => {
-  router.push('/index')
-}
 </script>
 
 <style scoped>
@@ -113,43 +219,18 @@ const goToIndex = () => {
   background: #fafafa;
 }
 
-/* 左侧图片区域 - 占80% */
+/* 左侧区域 - 占80% */
 .left-panel {
-  flex: 4; /* 80%比例 (4:1 = 80%:20%) */
+  flex: 4;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(160deg, #0b0d17 0%, #1a1a2e 40%, #16213e 100%);
 }
 
-.image-container {
+.space-bg {
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-}
-
-.full-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  transform: scale(1.02);
-  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.image-container:hover .full-image {
-  transform: scale(1);
-}
-
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg,
-  rgba(0, 0, 0, 0.4) 0%,
-  rgba(0, 0, 0, 0.2) 50%,
-  rgba(0, 0, 0, 0.1) 100%);
 }
 
 /* 文字放到左下角 */
@@ -160,7 +241,7 @@ const goToIndex = () => {
   color: white;
   text-align: left;
   max-width: 500px;
-  z-index: 2;
+  z-index: 20;
 }
 
 .main-title {
@@ -177,6 +258,248 @@ const goToIndex = () => {
   line-height: 1.5;
   font-weight: 400;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== Astronaut animation ===== */
+@keyframes snow {
+  0% { opacity: 0; transform: translateY(0px); }
+  20% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(650px); }
+}
+@keyframes astronautSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.box-of-star1, .box-of-star2, .box-of-star3, .box-of-star4 {
+  width: 100%;
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  top: 0;
+  transform: translateY(0px);
+  height: 700px;
+}
+.box-of-star1 { animation: snow 5s linear infinite; }
+.box-of-star2 { animation: snow 5s -1.64s linear infinite; }
+.box-of-star3 { animation: snow 5s -2.30s linear infinite; }
+.box-of-star4 { animation: snow 5s -3.30s linear infinite; }
+
+.star {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: #FFF;
+  position: absolute;
+  z-index: 10;
+  opacity: 0.7;
+}
+.star:before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #FFF;
+  position: absolute;
+  z-index: 10;
+  top: 80px;
+  left: 70px;
+  opacity: .7;
+}
+.star:after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #FFF;
+  position: absolute;
+  z-index: 10;
+  top: 8px;
+  left: 170px;
+  opacity: .9;
+}
+.star-position1 { top: 30px; left: 20px; }
+.star-position2 { top: 110px; left: 250px; }
+.star-position3 { top: 60px; left: 570px; }
+.star-position4 { top: 120px; left: 900px; }
+.star-position5 { top: 20px; left: 1120px; }
+.star-position6 { top: 90px; left: 1280px; }
+.star-position7 { top: 30px; left: 1480px; }
+
+.astronaut {
+  width: 250px;
+  height: 300px;
+  position: absolute;
+  z-index: 11;
+  top: calc(50% - 150px);
+  left: calc(50% - 125px);
+  animation: astronautSpin 5s linear infinite;
+}
+
+.schoolbag {
+  width: 100px;
+  height: 150px;
+  position: absolute;
+  z-index: 1;
+  top: calc(50% - 75px);
+  left: calc(50% - 50px);
+  background-color: #94b7ca;
+  border-radius: 50px 50px 0 0 / 30px 30px 0 0;
+}
+
+.head {
+  width: 97px;
+  height: 80px;
+  position: absolute;
+  z-index: 3;
+  background: -webkit-linear-gradient(left, #e3e8eb 0%, #e3e8eb 50%, #fbfdfa 50%, #fbfdfa 100%);
+  border-radius: 50%;
+  top: 34px;
+  left: calc(50% - 47.5px);
+}
+.head:after {
+  content: "";
+  width: 60px;
+  height: 50px;
+  position: absolute;
+  top: calc(50% - 25px);
+  left: calc(50% - 30px);
+  background: -webkit-linear-gradient(top, #15aece 0%, #15aece 50%, #0391bf 50%, #0391bf 100%);
+  border-radius: 15px;
+}
+.head:before {
+  content: "";
+  width: 12px;
+  height: 25px;
+  position: absolute;
+  top: calc(50% - 12.5px);
+  left: -4px;
+  background-color: #618095;
+  border-radius: 5px;
+  box-shadow: 92px 0px 0px #618095;
+}
+
+.body {
+  width: 85px;
+  height: 100px;
+  position: absolute;
+  z-index: 2;
+  background-color: #fffbff;
+  border-radius: 40px / 20px;
+  top: 105px;
+  left: calc(50% - 41px);
+  background: -webkit-linear-gradient(left, #e3e8eb 0%, #e3e8eb 50%, #fbfdfa 50%, #fbfdfa 100%);
+}
+
+.panel {
+  width: 60px;
+  height: 40px;
+  position: absolute;
+  top: 20px;
+  left: calc(50% - 30px);
+  background-color: #b7cceb;
+}
+.panel:before {
+  content: "";
+  width: 30px;
+  height: 5px;
+  position: absolute;
+  top: 9px;
+  left: 7px;
+  background-color: #fbfdfa;
+  box-shadow: 0px 9px 0px #fbfdfa, 0px 18px 0px #fbfdfa;
+}
+.panel:after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  position: absolute;
+  top: 9px;
+  right: 7px;
+  background-color: #fbfdfa;
+  border-radius: 50%;
+  box-shadow: 0px 14px 0px 2px #fbfdfa;
+}
+
+.arm {
+  width: 80px;
+  height: 30px;
+  position: absolute;
+  top: 121px;
+  z-index: 2;
+}
+.arm-left {
+  left: 30px;
+  background-color: #e3e8eb;
+  border-radius: 0 0 0 39px;
+}
+.arm-right {
+  right: 30px;
+  background-color: #fbfdfa;
+  border-radius: 0 0 39px 0;
+}
+.arm-left:before, .arm-right:before {
+  content: "";
+  width: 30px;
+  height: 70px;
+  position: absolute;
+  top: -40px;
+}
+.arm-left:before {
+  border-radius: 50px 50px 0px 120px / 50px 50px 0 110px;
+  left: 0;
+  background-color: #e3e8eb;
+}
+.arm-right:before {
+  border-radius: 50px 50px 120px 0 / 50px 50px 110px 0;
+  right: 0;
+  background-color: #fbfdfa;
+}
+.arm-left:after, .arm-right:after {
+  content: "";
+  width: 30px;
+  height: 10px;
+  position: absolute;
+  top: -24px;
+}
+.arm-left:after { background-color: #6e91a4; left: 0; }
+.arm-right:after { right: 0; background-color: #b6d2e0; }
+
+.leg {
+  width: 30px;
+  height: 40px;
+  position: absolute;
+  z-index: 2;
+  bottom: 70px;
+}
+.leg-left {
+  left: 76px;
+  background-color: #e3e8eb;
+  transform: rotate(20deg);
+}
+.leg-right {
+  right: 73px;
+  background-color: #fbfdfa;
+  transform: rotate(-20deg);
+}
+.leg-left:before, .leg-right:before {
+  content: "";
+  width: 50px;
+  height: 25px;
+  position: absolute;
+  bottom: -26px;
+}
+.leg-left:before {
+  left: -20px;
+  background-color: #e3e8eb;
+  border-radius: 30px 0 0 0;
+  border-bottom: 10px solid #6d96ac;
+}
+.leg-right:before {
+  right: -20px;
+  background-color: #fbfdfa;
+  border-radius: 0 30px 0 0;
+  border-bottom: 10px solid #b0cfe4;
 }
 
 /* 右侧内容区域 - 占20%，简约无框风格 */
@@ -356,7 +679,6 @@ const goToIndex = () => {
     width: 100%;
   }
 
-  /* 移动端文字居中显示 */
   .image-content {
     left: 50%;
     bottom: 30px;
@@ -365,17 +687,14 @@ const goToIndex = () => {
     width: 90%;
   }
 
-  .main-title {
-    font-size: 28px;
-    margin-bottom: 10px;
-  }
+  .main-title { font-size: 28px; margin-bottom: 10px; }
+  .subtitle { font-size: 16px; }
 
-  .subtitle {
-    font-size: 16px;
-  }
-
-  .full-image {
-    transform: scale(1);
+  .astronaut {
+    width: 150px;
+    height: 180px;
+    top: calc(30% - 90px);
+    left: calc(50% - 75px);
   }
 
   .right-panel {
@@ -385,72 +704,108 @@ const goToIndex = () => {
     padding: 40px 20px;
   }
 
-  .right-panel::before {
-    display: none;
-  }
-
-  .content-wrapper {
-    max-width: 400px;
-    margin: 0 auto;
-  }
+  .right-panel::before { display: none; }
+  .content-wrapper { max-width: 400px; margin: 0 auto; }
 }
 
-/* 超大屏幕优化 */
 @media (min-width: 1600px) {
-  .image-content {
-    left: 60px;
-    bottom: 60px;
-  }
-
-  .main-title {
-    font-size: 42px;
-  }
-
-  .subtitle {
-    font-size: 22px;
-  }
+  .image-content { left: 60px; bottom: 60px; }
+  .main-title { font-size: 42px; }
+  .subtitle { font-size: 22px; }
 }
 
-/* 超小屏幕优化 */
 @media (max-width: 480px) {
-  .left-panel {
-    height: 250px;
-  }
-
-  .image-content {
-    bottom: 20px;
-  }
-
-  .main-title {
-    font-size: 24px;
-  }
-
-  .subtitle {
-    font-size: 14px;
-  }
-
-  .right-panel {
-    padding: 30px 15px;
-  }
-
-  .welcome-title {
-    font-size: 24px;
-  }
+  .left-panel { height: 250px; }
+  .image-content { bottom: 20px; }
+  .main-title { font-size: 24px; }
+  .subtitle { font-size: 14px; }
+  .astronaut { width: 120px; height: 144px; top: calc(25% - 72px); left: calc(50% - 60px); }
+  .right-panel { padding: 30px 15px; }
+  .welcome-title { font-size: 24px; }
 }
 
-/* 超矮屏幕优化 */
 @media (max-height: 500px) {
-  .image-content {
-    bottom: 15px;
-  }
-
-  .main-title {
-    font-size: 22px;
-    margin-bottom: 8px;
-  }
-
-  .subtitle {
-    font-size: 13px;
-  }
+  .image-content { bottom: 15px; }
+  .main-title { font-size: 22px; margin-bottom: 8px; }
+  .subtitle { font-size: 13px; }
+  .astronaut { width: 130px; height: 156px; top: calc(50% - 78px); left: calc(50% - 65px); }
 }
+
+/* Badge */
+.badge {
+  position: absolute; top: 4px; right: 4px;
+  min-width: 18px; height: 18px; border-radius: 9px;
+  background: #ff3b30; color: #fff; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; padding: 0 4px;
+  line-height: 1;
+}
+
+/* Notice overlay */
+.notice-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Brutalist card */
+.brutalist-card {
+  width: 380px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 4px solid #000;
+  background-color: #fff;
+  padding: 1.5rem;
+  box-shadow: 10px 10px 0 #000;
+  font-family: "Arial", sans-serif;
+}
+.brutalist-card__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #000;
+  padding-bottom: 1rem;
+}
+.brutalist-card__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+  padding: 0.5rem;
+}
+.brutalist-card__icon svg { height: 1.5rem; width: 1.5rem; fill: #fff; }
+.brutalist-card__alert { font-weight: 900; color: #000; font-size: 1.5rem; text-transform: uppercase; }
+.brutalist-card__message {
+  margin-top: 1rem;
+  color: #000;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  border-bottom: 2px solid #000;
+  padding-bottom: 1rem;
+  font-weight: 600;
+}
+.brutalist-card__message:last-of-type { border-bottom: none; }
+.brutalist-card__actions { margin-top: 1rem; }
+.brutalist-card__button {
+  display: block; width: 100%; padding: 0.75rem;
+  text-align: center; font-size: 1rem; font-weight: 700;
+  text-transform: uppercase; border: 3px solid #000;
+  background-color: #fff; color: #000; position: relative;
+  transition: all 0.2s ease; box-shadow: 5px 5px 0 #000;
+  overflow: hidden; text-decoration: none; margin-bottom: 1rem;
+  cursor: pointer; font-family: inherit;
+}
+.brutalist-card__button--read { background-color: #000; color: #fff; }
+.brutalist-card__button::before {
+  content: ""; position: absolute; top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: all 0.6s;
+}
+.brutalist-card__button:hover::before { left: 100%; }
+.brutalist-card__button:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #000; }
+.brutalist-card__button--mark:hover { background-color: #296fbb; border-color: #296fbb; color: #fff; box-shadow: 7px 7px 0 #004280; }
+.brutalist-card__button--read:hover { background-color: #ff0000; border-color: #ff0000; color: #fff; box-shadow: 7px 7px 0 #800000; }
+.brutalist-card__button:active { transform: translate(5px, 5px); box-shadow: none; }
 </style>

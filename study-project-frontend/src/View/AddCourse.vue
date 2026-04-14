@@ -22,7 +22,7 @@
       <div class="page-header">
         <div>
           <h2 class="page-title">课程管理</h2>
-          <span class="page-sub">{{ courseList.length }} 门课程</span>
+          <span class="page-sub">共 {{ total }} 门课程</span>
         </div>
         <button class="btn-add" @click="showAddDialog = true">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14">
@@ -30,6 +30,17 @@
           </svg>
           添加课程
         </button>
+      </div>
+
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" width="15" height="15">
+            <circle cx="9" cy="9" r="6.5" stroke-width="1.6"/>
+            <path d="M14 14l4 4" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <input class="search-input" v-model="search" @input="onSearchInput" placeholder="搜索课程名称…" />
+        </div>
       </div>
 
       <!-- 课程列表 -->
@@ -79,6 +90,25 @@
         </div>
       </div>
 
+      <!-- 分页 -->
+      <div class="pagination" v-if="totalPages > 1">
+        <button class="pg-btn" :disabled="page <= 1" @click="goToPage(page - 1)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="12" height="12"><path d="M10 3L5 8l5 5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <template v-if="pageNumbers[0] > 1">
+          <button class="pg-btn" @click="goToPage(1)">1</button>
+          <span v-if="pageNumbers[0] > 2" class="pg-dots">…</span>
+        </template>
+        <button v-for="p in pageNumbers" :key="p" class="pg-btn" :class="{ active: p === page }" @click="goToPage(p)">{{ p }}</button>
+        <template v-if="pageNumbers[pageNumbers.length - 1] < totalPages">
+          <span v-if="pageNumbers[pageNumbers.length - 1] < totalPages - 1" class="pg-dots">…</span>
+          <button class="pg-btn" @click="goToPage(totalPages)">{{ totalPages }}</button>
+        </template>
+        <button class="pg-btn" :disabled="page >= totalPages" @click="goToPage(page + 1)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="12" height="12"><path d="M6 3l5 5-5 5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
       <div v-if="courseList.length === 0" class="empty-state">
         <div class="empty-icon-wrap">
           <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" width="36" height="36">
@@ -106,6 +136,30 @@
           </el-form-item>
           <el-form-item label="最大签到次数" prop="maxCheckInCount">
             <el-input-number v-model="addForm.maxCheckInCount" :min="1" :max="100" controls-position="right" class="w-100" />
+          </el-form-item>
+          <el-form-item label="封面图URL">
+            <el-input v-model="addForm.coverImage" placeholder="输入封面图片链接" maxlength="500" />
+          </el-form-item>
+          <el-form-item label="视频URL">
+            <el-input v-model="addForm.videoUrl" placeholder="输入视频链接（支持B站/YouTube嵌入链接）" maxlength="500" />
+          </el-form-item>
+          <div class="detail-divider">
+            <span class="detail-divider-text">课程详情</span>
+          </div>
+          <el-form-item label="课程目标">
+            <el-input v-model="addForm.objectives" type="textarea" :rows="3" placeholder="描述课程的学习目标" maxlength="1000" show-word-limit />
+          </el-form-item>
+          <el-form-item label="课程大纲">
+            <el-input v-model="addForm.outline" type="textarea" :rows="3" placeholder="列出课程的主要章节内容" maxlength="2000" show-word-limit />
+          </el-form-item>
+          <el-form-item label="先修要求">
+            <el-input v-model="addForm.requirements" type="textarea" :rows="2" placeholder="学习本课程需要的基础知识" maxlength="500" show-word-limit />
+          </el-form-item>
+          <el-form-item label="适合人群">
+            <el-input v-model="addForm.audience" type="textarea" :rows="2" placeholder="描述适合学习本课程的人群" maxlength="500" show-word-limit />
+          </el-form-item>
+          <el-form-item label="参考资料">
+            <el-input v-model="addForm.materials" type="textarea" :rows="2" placeholder="推荐的参考书籍或资源" maxlength="1000" show-word-limit />
           </el-form-item>
         </el-form>
         <template #footer>
@@ -141,6 +195,30 @@
           <el-form-item label="最大签到次数" prop="maxCheckInCount">
             <el-input-number v-model="editForm.maxCheckInCount" :min="1" :max="100" controls-position="right" class="w-100" />
           </el-form-item>
+          <el-form-item label="封面图URL">
+            <el-input v-model="editForm.coverImage" placeholder="输入封面图片链接" maxlength="500" />
+          </el-form-item>
+          <el-form-item label="视频URL">
+            <el-input v-model="editForm.videoUrl" placeholder="输入视频链接（支持B站/YouTube嵌入链接）" maxlength="500" />
+          </el-form-item>
+          <div class="detail-divider">
+            <span class="detail-divider-text">课程详情</span>
+          </div>
+          <el-form-item label="课程目标">
+            <el-input v-model="editForm.objectives" type="textarea" :rows="3" placeholder="描述课程的学习目标" maxlength="1000" show-word-limit />
+          </el-form-item>
+          <el-form-item label="课程大纲">
+            <el-input v-model="editForm.outline" type="textarea" :rows="3" placeholder="列出课程的主要章节内容" maxlength="2000" show-word-limit />
+          </el-form-item>
+          <el-form-item label="先修要求">
+            <el-input v-model="editForm.requirements" type="textarea" :rows="2" placeholder="学习本课程需要的基础知识" maxlength="500" show-word-limit />
+          </el-form-item>
+          <el-form-item label="适合人群">
+            <el-input v-model="editForm.audience" type="textarea" :rows="2" placeholder="描述适合学习本课程的人群" maxlength="500" show-word-limit />
+          </el-form-item>
+          <el-form-item label="参考资料">
+            <el-input v-model="editForm.materials" type="textarea" :rows="2" placeholder="推荐的参考书籍或资源" maxlength="1000" show-word-limit />
+          </el-form-item>
         </el-form>
         <template #footer>
           <div class="dlg-footer">
@@ -157,7 +235,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useStore } from '@/stores/index.js'
@@ -181,6 +259,31 @@ const editing = ref(false)
 const showAddDialog = ref(false)
 const showEditDialog = ref(false)
 const courseList = ref([])
+const total = ref(0)
+const page = ref(1)
+const pageSize = 9
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
+const search = ref('')
+let searchTimer = null
+
+const onSearchInput = () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => { page.value = 1; loadCourseList() }, 300)
+}
+
+const goToPage = (p) => {
+  if (p < 1 || p > totalPages.value) return
+  page.value = p
+  loadCourseList()
+}
+
+const pageNumbers = computed(() => {
+  const t = totalPages.value, c = page.value
+  const pages = []
+  const start = Math.max(1, c - 2), end = Math.min(t, c + 2)
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
+})
 
 // 表单引用
 const addFormRef = ref()
@@ -192,7 +295,14 @@ const addForm = reactive({
   teacherName: '',
   description: '',
   duration: '',
-  maxCheckInCount: 12
+  maxCheckInCount: 12,
+  objectives: '',
+  outline: '',
+  requirements: '',
+  audience: '',
+  materials: '',
+  coverImage: '',
+  videoUrl: ''
 })
 
 const editForm = reactive({
@@ -202,7 +312,14 @@ const editForm = reactive({
   description: '',
   duration: '',
   studentsCount: 0,
-  maxCheckInCount: 12
+  maxCheckInCount: 12,
+  objectives: '',
+  outline: '',
+  requirements: '',
+  audience: '',
+  materials: '',
+  coverImage: '',
+  videoUrl: ''
 })
 
 // 表单验证规则
@@ -249,21 +366,31 @@ const checkAdminLogin = () => {
 // 加载课程列表
 const loadCourseList = () => {
   loading.value = true
-  get('/api/admin/course/list',
+  const params = new URLSearchParams({
+    page: page.value, pageSize,
+    ...(search.value && { search: search.value })
+  })
+  get('/api/admin/course/list?' + params,
       (message) => {
-        console.log('获取课程列表成功:', message)
-        if (message && message.data) {
+        if (message && message.list) {
+          courseList.value = message.list
+          total.value = message.total || 0
+        } else if (message && message.data) {
           courseList.value = message.data
+          total.value = message.data.length
         } else if (Array.isArray(message)) {
           courseList.value = message
+          total.value = message.length
         } else {
           courseList.value = []
+          total.value = 0
         }
         loading.value = false
       },
       (message) => {
         ElMessage.error(message || '加载课程列表失败')
         courseList.value = []
+        total.value = 0
         loading.value = false
       }
   )
@@ -301,7 +428,14 @@ const handleAddCourse = () => {
             teacherName: addForm.teacherName,
             description: addForm.description,
             duration: addForm.duration,
-            maxCheckInCount: addForm.maxCheckInCount
+            maxCheckInCount: addForm.maxCheckInCount,
+            objectives: addForm.objectives,
+            outline: addForm.outline,
+            requirements: addForm.requirements,
+            audience: addForm.audience,
+            materials: addForm.materials,
+            coverImage: addForm.coverImage,
+            videoUrl: addForm.videoUrl
           },
           // 成功回调
           (message) => {
@@ -390,6 +524,22 @@ const handleEdit = (course) => {
   editForm.duration = course.duration
   editForm.studentsCount = course.studentsCount || 0
   editForm.maxCheckInCount = course.maxCheckInCount
+  editForm.coverImage = course.coverImage || ''
+  editForm.videoUrl = course.videoUrl || ''
+  // 加载课程详情
+  get('/api/admin/course/detail?courseId=' + course.id, data => {
+    editForm.objectives = data?.objectives || ''
+    editForm.outline = data?.outline || ''
+    editForm.requirements = data?.requirements || ''
+    editForm.audience = data?.audience || ''
+    editForm.materials = data?.materials || ''
+  }, () => {
+    editForm.objectives = ''
+    editForm.outline = ''
+    editForm.requirements = ''
+    editForm.audience = ''
+    editForm.materials = ''
+  })
   showEditDialog.value = true
 }
 
@@ -411,7 +561,14 @@ const handleUpdateCourse = () => {
             description: editForm.description,
             duration: editForm.duration,
             studentsCount: editForm.studentsCount,
-            maxCheckInCount: editForm.maxCheckInCount
+            maxCheckInCount: editForm.maxCheckInCount,
+            objectives: editForm.objectives,
+            outline: editForm.outline,
+            requirements: editForm.requirements,
+            audience: editForm.audience,
+            materials: editForm.materials,
+            coverImage: editForm.coverImage,
+            videoUrl: editForm.videoUrl
           },
           (message) => {
             console.log('✅ 更新课程成功:', message)
@@ -468,6 +625,13 @@ const handleCloseDialog = () => {
     addForm.description = ''
     addForm.duration = ''
     addForm.maxCheckInCount = 12
+    addForm.objectives = ''
+    addForm.outline = ''
+    addForm.requirements = ''
+    addForm.audience = ''
+    addForm.materials = ''
+    addForm.coverImage = ''
+    addForm.videoUrl = ''
   }
 }
 
@@ -483,6 +647,13 @@ const handleCloseEditDialog = () => {
     editForm.duration = ''
     editForm.studentsCount = 0
     editForm.maxCheckInCount = 12
+    editForm.objectives = ''
+    editForm.outline = ''
+    editForm.requirements = ''
+    editForm.audience = ''
+    editForm.materials = ''
+    editForm.coverImage = ''
+    editForm.videoUrl = ''
   }
 }
 
@@ -696,6 +867,20 @@ onUnmounted(() => {
 }
 :deep(.glass-dialog .el-input-number.w-100) { width: 100%; }
 
+.detail-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 18px 0 6px; padding: 0;
+}
+.detail-divider::before, .detail-divider::after {
+  content: ''; flex: 1; height: 0.5px;
+  background: rgba(0,0,0,0.1);
+}
+.detail-divider-text {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: #86868b; white-space: nowrap;
+}
+
 .dlg-footer { display: flex; gap: 10px; justify-content: flex-end; }
 .dlg-btn {
   display: inline-flex; align-items: center; gap: 7px;
@@ -724,4 +909,34 @@ onUnmounted(() => {
   .card-footer { flex-direction: column; }
   .page-header { flex-wrap: wrap; }
 }
+
+/* ── Search ── */
+.search-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+.search-input-wrap {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 12px;
+  background: rgba(255,255,255,0.52); backdrop-filter: blur(20px);
+  border: 0.5px solid rgba(255,255,255,0.85);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.95) inset, 0 2px 8px rgba(0,0,0,0.06);
+  color: #86868b; transition: box-shadow 0.15s;
+}
+.search-input-wrap:focus-within { box-shadow: 0 0 0 3px rgba(0,113,227,0.18), 0 1px 0 rgba(255,255,255,0.95) inset; }
+.search-input { flex: 1; border: none; outline: none; background: none; font-size: 14px; font-family: inherit; color: #1d1d1f; }
+.search-input::placeholder { color: #aeaeb2; }
+
+/* ── Pagination ── */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 28px; padding: 16px 0; }
+.pg-btn {
+  min-width: 36px; height: 36px; border-radius: 10px; border: none;
+  background: rgba(255,255,255,0.55); backdrop-filter: blur(12px);
+  border: 0.5px solid rgba(255,255,255,0.8);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.95) inset, 0 2px 8px rgba(0,0,0,0.06);
+  color: #1d1d1f; font-size: 14px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.pg-btn:hover:not(:disabled):not(.active) { background: rgba(255,255,255,0.78); transform: translateY(-1px); }
+.pg-btn.active { background: rgba(29,29,31,0.88); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.22); }
+.pg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pg-dots { color: #86868b; font-size: 14px; padding: 0 2px; }
 </style>

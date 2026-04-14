@@ -42,9 +42,19 @@ const router = createRouter({
       component: () => import('@/view/CoursePage.vue')
     },
     {
+      path: '/course/:id',
+      name: 'course-detail',
+      component: () => import('@/view/CourseDetail.vue')
+    },
+    {
       path: '/profile',
       name: 'profile',
       component: () => import('@/view/ProfilePage.vue')
+    },
+    {
+      path: '/announcements',
+      name: 'announcements',
+      component: () => import('@/view/AnnouncementPage.vue')
     },
     // 添加管理员路由
     {
@@ -72,6 +82,12 @@ const router = createRouter({
       meta: { requiresAdmin: true }
     },
     {
+      path: '/admin-announcement',
+      name: 'AdminAnnouncement',
+      component: () => import('@/view/AdminAnnouncement.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/index'
     }
@@ -90,7 +106,7 @@ router.beforeEach((to, from, next) => {
   const isWelcomePage = to.name && to.name.startsWith('welcome')
 
   // 检查是否访问需要认证的页面
-  const isProtectedPage = to.name === 'index' || to.name === 'courses' || to.name === 'profile'
+  const isProtectedPage = to.name === 'index' || to.name === 'courses' || to.name === 'profile' || to.name === 'course-detail' || to.name === 'announcements'
 
   // 检查是否访问需要管理员权限的页面
   const isAdminPage = to.meta.requiresAdmin

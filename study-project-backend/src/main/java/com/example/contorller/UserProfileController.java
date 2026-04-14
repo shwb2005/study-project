@@ -4,6 +4,7 @@ import com.example.entity.RestBean;
 import com.example.entity.UserProfile;
 import com.example.entity.user.AccountUser;
 import com.example.service.UserProfileService;
+import com.example.service.ActivityLogService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,9 @@ public class UserProfileController {
 
     @Resource
     private UserProfileService userProfileService;
+
+    @Resource
+    private ActivityLogService activityLogService;
 
     @GetMapping
     public RestBean<UserProfile> getProfile(HttpSession session) {
@@ -101,6 +105,7 @@ public class UserProfileController {
             }
 
             if (success) {
+                activityLogService.log(user.getId(), "更新资料", "更新了个人资料");
                 return RestBean.success("资料更新成功");
             } else {
                 return RestBean.failure(500, "资料更新失败");

@@ -1,11 +1,12 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { get } from "@/net"
 import { ElMessage } from "element-plus"
 import { useStore } from "@/stores"
 import axios from 'axios'
 import AIChat from "@/components/AIChat.vue"
+import * as echarts from 'echarts'
 
 const store = useStore()
 const router = useRouter()
@@ -51,13 +52,9 @@ const loadMyCourses = () => {
 }
 
 const loadLogs = () => {
-  logs.value = [
-    { id: 1, action: '登录系统', time: new Date().toISOString() },
-    { id: 2, action: '查看个人资料', time: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
-    { id: 3, action: '更新个人信息', time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-    { id: 4, action: '浏览课程', time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
-    { id: 5, action: '课程签到', time: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString() }
-  ]
+  get('/api/activity/logs?limit=5', data => {
+    logs.value = (data && Array.isArray(data)) ? data : []
+  }, () => { logs.value = [] })
 }
 
 const updateProfile = () => {
@@ -78,8 +75,7 @@ const updateProfile = () => {
   }).then(({ data }) => {
     if (data.success) {
       ElMessage.success(data.message); loadProfile()
-      logs.value.unshift({ id: Date.now(), action: '更新个人资料', time: new Date().toISOString() })
-      if (logs.value.length > 5) logs.value = logs.value.slice(0, 5)
+      loadLogs()
     } else { ElMessage.error(data.message || '更新失败') }
     loading.value = false
   }).catch(() => { ElMessage.error('网络错误，请稍后重试'); loading.value = false })
@@ -104,6 +100,134 @@ const formatRelTime = (s) => {
 }
 
 const myCoursesCount = computed(() => myCourses.value.length)
+
+// ─── Dashboard stats ───
+const studyStats = ref(null)
+const progressChartRef = ref(null)
+const trendChartRef = ref(null)
+let progressChart = null
+let trendChart = null
+
+const loadStudyStats = () => {
+  get('/api/course/stats', data => {
+    studyStats.value = data || null
+    if (data) {
+      nextTick(() => {
+        renderProgressChart(data.courseProgressList || [])
+        renderTrendChart(data.checkInTrend || [])
+      })
+    }
+  }, () => { studyStats.value = null })
+}
+
+const renderProgressChart = (list) => {
+  if (!progressChartRef.value) return
+  if (progressChart) progressChart.dispose()
+  progressChart = echarts.init(progressChartRef.value)
+  const names = list.map(i => {
+    const n = i.name || ''
+    return n.length > 8 ? n.slice(0, 8) + '…' : n
+  }).reverse()
+  const values = list.map(i => i.progress || 0).reverse()
+  const needZoom = list.length > 5
+  progressChart.setOption({
+    tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
+    grid: { top: 10, bottom: needZoom ? 28 : 10, left: 8, right: 20, containLabel: true },
+    xAxis: {
+      type: 'value', max: 100,
+      axisLabel: { fontSize: 11, color: '#86868b', formatter: '{value}%' },
+      splitLine: { lineStyle: { color: 'rgba(0,0,0,0.05)' } }
+    },
+    yAxis: {
+      type: 'category', data: names,
+      axisLabel: { fontSize: 11, color: '#6e6e73' },
+      axisLine: { lineStyle: { color: 'rgba(0,0,0,0.08)' } },
+      axisTick: { show: false }
+    },
+    dataZoom: needZoom ? [{
+      type: 'slider', yAxisIndex: 0, zoomLock: false,
+      startValue: 0, endValue: 4,
+      width: 16, right: 0,
+      borderColor: 'transparent', backgroundColor: 'rgba(0,0,0,0.04)',
+      fillerColor: 'rgba(0,0,0,0.1)',
+      handleStyle: { color: '#86868b', borderColor: '#86868b' },
+      textStyle: { color: '#86868b', fontSize: 10 },
+      moveHandleSize: 4
+    }] : undefined,
+    series: [{
+      type: 'bar', data: values, barMaxWidth: 20, barMinHeight: 4,
+      itemStyle: {
+        borderRadius: [0, 6, 6, 0],
+        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          { offset: 0, color: '#6e6e73' }, { offset: 1, color: '#1d1d1f' }
+        ])
+      },
+      label: {
+        show: true, position: 'right', fontSize: 11, color: '#86868b',
+        formatter: '{c}%'
+      }
+    }]
+  })
+}
+
+const renderTrendChart = (trend) => {
+  if (!trendChartRef.value) return
+  if (trendChart) trendChart.dispose()
+  trendChart = echarts.init(trendChartRef.value)
+  // 填充最近7天（无数据的天补0）
+  const days = []
+  const counts = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    days.push(`${d.getMonth() + 1}/${d.getDate()}`)
+    const found = trend.find(t => t.date === key)
+    counts.push(found ? Number(found.count) : 0)
+  }
+  trendChart.setOption({
+    tooltip: { trigger: 'axis', formatter: '{b}<br/>签到 <b>{c}</b> 次' },
+    grid: { top: 20, bottom: 36, left: 12, right: 16, containLabel: true },
+    xAxis: {
+      type: 'category', data: days, boundaryGap: false,
+      axisLabel: { fontSize: 11, color: '#86868b' },
+      axisLine: { lineStyle: { color: 'rgba(0,0,0,0.08)' } },
+      axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value', minInterval: 1,
+      axisLabel: { fontSize: 11, color: '#86868b' },
+      splitLine: { lineStyle: { color: 'rgba(0,0,0,0.05)' } }
+    },
+    series: [{
+      type: 'line', data: counts, smooth: true, symbol: 'circle', symbolSize: 7,
+      lineStyle: { width: 2.5, color: '#0071e3' },
+      itemStyle: { color: '#0071e3', borderWidth: 2, borderColor: '#fff' },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(0,113,227,0.25)' }, { offset: 1, color: 'rgba(0,113,227,0.02)' }
+        ])
+      }
+    }]
+  })
+}
+
+const handleResize = () => {
+  progressChart && progressChart.resize()
+  trendChart && trendChart.resize()
+}
+
+const getActivityClass = (action) => {
+  if (!action) return ''
+  if (action.includes('登录')) return 'dot-login'
+  if (action.includes('报名') || action.includes('收藏')) return 'dot-enroll'
+  if (action.includes('签到')) return 'dot-checkin'
+  if (action.includes('评价') || action.includes('讨论')) return 'dot-review'
+  if (action.includes('更新')) return 'dot-profile'
+  if (action.includes('退出')) return 'dot-exit'
+  return ''
+}
+
 const totalCheckInCount = computed(() => {
   let total = 0
   myCourses.value.forEach(course => {
@@ -125,12 +249,16 @@ const handleScroll = () => {
 }
 
 onMounted(() => {
-  loadProfile(); loadMyCourses(); loadLogs()
+  loadProfile(); loadMyCourses(); loadLogs(); loadStudyStats()
   window.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('resize', handleResize)
+  progressChart && progressChart.dispose()
+  trendChart && trendChart.dispose()
 })
 </script>
 
@@ -173,15 +301,60 @@ onUnmounted(() => {
       <!-- Stats -->
       <div class="glass-card stats-row">
         <div class="stat">
-          <span class="stat-n">{{ myCoursesCount }}</span>
+          <span class="stat-n">{{ studyStats?.enrolledCount ?? myCoursesCount }}</span>
           <span class="stat-l">在学课程</span>
         </div>
         <div class="vline"></div>
         <div class="stat">
-          <span class="stat-n">{{ totalCheckInCount }}</span>
+          <span class="stat-n">{{ studyStats?.totalCheckIns ?? totalCheckInCount }}</span>
           <span class="stat-l">签到次数</span>
         </div>
+        <template v-if="studyStats">
+          <div class="vline"></div>
+          <div class="stat">
+            <span class="stat-n">{{ studyStats.avgProgress }}<small class="stat-u">%</small></span>
+            <span class="stat-l">平均进度</span>
+          </div>
+          <div class="vline"></div>
+          <div class="stat">
+            <span class="stat-n">{{ studyStats.favoriteCount }}</span>
+            <span class="stat-l">收藏课程</span>
+          </div>
+        </template>
       </div>
+
+      <!-- Dashboard -->
+      <section class="glass-card dashboard" v-if="studyStats">
+        <h2 class="sec-title">学习数据</h2>
+
+        <!-- Summary cards -->
+        <div class="dash-summary">
+          <div class="dash-card">
+            <span class="dash-n">{{ studyStats.completedCount }}</span>
+            <span class="dash-l">已完成</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-n">{{ studyStats.ratingCount }}</span>
+            <span class="dash-l">已评分</span>
+          </div>
+          <div class="dash-card">
+            <span class="dash-n">{{ studyStats.avgRating }}</span>
+            <span class="dash-l">平均评分</span>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+          <div class="chart-wrap">
+            <p class="chart-label">课程进度</p>
+            <div ref="progressChartRef" class="chart-box"></div>
+          </div>
+          <div class="chart-wrap">
+            <p class="chart-label">签到趋势（近7天）</p>
+            <div ref="trendChartRef" class="chart-box"></div>
+          </div>
+        </div>
+      </section>
 
       <!-- Edit profile -->
       <section class="glass-card">
@@ -236,10 +409,13 @@ onUnmounted(() => {
       <section class="glass-card">
         <h2 class="sec-title">最近动态</h2>
         <ul class="rows" v-if="logs.length">
-          <li class="row" v-for="(log, i) in logs" :key="log.id" :class="{ last: i === logs.length - 1 }">
-            <span class="pulse-dot"></span>
-            <span class="rk" style="flex:1">{{ log.action }}</span>
-            <span class="rv">{{ formatRelTime(log.time) }}</span>
+          <li class="row activity-row" v-for="(log, i) in logs" :key="log.id" :class="{ last: i === logs.length - 1 }">
+            <span class="activity-dot" :class="getActivityClass(log.action)"></span>
+            <div class="activity-info">
+              <span class="activity-action">{{ log.action }}</span>
+              <span class="activity-desc" v-if="log.description">{{ log.description }}</span>
+            </div>
+            <span class="rv">{{ formatRelTime(log.createdAt) }}</span>
           </li>
         </ul>
         <p class="empty" v-else>暂无动态</p>
@@ -477,9 +653,28 @@ onUnmounted(() => {
 .rv { font-size: 15px; color: #6e6e73; margin-left: auto; }
 
 /* pulse dot for activity */
-.pulse-dot {
-  flex-shrink: 0; width: 7px; height: 7px;
-  border-radius: 50%; background: #0071e3; opacity: 0.55;
+.activity-row {
+  align-items: flex-start;
+  gap: 12px;
+}
+.activity-dot {
+  flex-shrink: 0; width: 8px; height: 8px;
+  border-radius: 50%; background: #0071e3; margin-top: 5px;
+}
+.activity-dot.dot-login { background: #34c759; }
+.activity-dot.dot-enroll { background: #ff9500; }
+.activity-dot.dot-checkin { background: #0071e3; }
+.activity-dot.dot-review { background: #af52de; }
+.activity-dot.dot-profile { background: #5ac8fa; }
+.activity-dot.dot-exit { background: #ff3b30; }
+.activity-info {
+  flex: 1; display: flex; flex-direction: column; gap: 2px;
+}
+.activity-action {
+  font-size: 15px; color: #1d1d1f; font-weight: 500;
+}
+.activity-desc {
+  font-size: 13px; color: #86868b; line-height: 1.4;
 }
 
 .empty { font-size: 15px; color: #86868b; text-align: center; padding: 14px 0; }
@@ -509,5 +704,29 @@ onUnmounted(() => {
     width: 100%;
     min-height: 400px;
   }
+  .charts-grid { grid-template-columns: 1fr; }
 }
+
+/* ─── Dashboard ─── */
+.dashboard { display: flex; flex-direction: column; gap: 18px; }
+.stat-u { font-size: 14px; font-weight: 400; color: #86868b; }
+
+.dash-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dash-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 14px 0; border-radius: 14px;
+  background: rgba(0,0,0,0.03); border: 0.5px solid rgba(0,0,0,0.05);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.88) inset;
+}
+.dash-n { font-size: 26px; font-weight: 700; letter-spacing: -0.04em; color: #1d1d1f; line-height: 1; }
+.dash-l { font-size: 11px; color: #86868b; font-weight: 500; }
+
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.chart-wrap {
+  background: rgba(0,0,0,0.025); border-radius: 16px; padding: 14px 14px 8px;
+  border: 0.5px solid rgba(0,0,0,0.05);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset;
+}
+.chart-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #86868b; margin-bottom: 8px; }
+.chart-box { width: 100%; height: 200px; }
 </style>

@@ -70,4 +70,31 @@ public interface UserCourseRelationMapper {
     // 在 UserCourseRelationMapper 中添加
     @Delete("DELETE FROM user_course_relation WHERE course_id = #{courseId}")
     int deleteByCourseId(Integer courseId);
+
+    @Select("SELECT COUNT(*) FROM user_course_relation WHERE user_id = #{userId}")
+    int countByUserId(@Param("userId") Integer userId);
+
+    @Select("SELECT ucr.*, c.name as course_name, c.description, c.teacher_name, c.duration, c.students_count, c.rating as course_rating, c.max_check_in_count as course_max_check_in " +
+            "FROM user_course_relation ucr " +
+            "LEFT JOIN courses c ON ucr.course_id = c.id " +
+            "WHERE ucr.user_id = #{userId} ORDER BY ucr.enrolled_at DESC " +
+            "LIMIT #{offset}, #{pageSize}")
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "userId", column = "user_id"),
+            @Result(property = "courseId", column = "course_id"),
+            @Result(property = "progress", column = "progress"),
+            @Result(property = "checkInCount", column = "check_in_count"),
+            @Result(property = "maxCheckInCount", column = "max_check_in_count"),
+            @Result(property = "lastCheckInDate", column = "last_check_in_date"),
+            @Result(property = "currentLesson", column = "current_lesson"),
+            @Result(property = "rating", column = "rating"),
+            @Result(property = "review", column = "review"),
+            @Result(property = "isFavorite", column = "is_favorite"),
+            @Result(property = "enrolledAt", column = "enrolled_at"),
+            @Result(property = "updatedAt", column = "updated_at"),
+            @Result(property = "course", column = "course_id", javaType = Course.class,
+                    one = @One(select = "com.example.mapper.CourseMapper.findById"))
+    })
+    List<UserCourseRelation> findByUserIdPaged(@Param("userId") Integer userId, @Param("offset") int offset, @Param("pageSize") int pageSize);
 }

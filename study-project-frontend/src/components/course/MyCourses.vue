@@ -1,13 +1,22 @@
 <script setup>
-import {ref, onMounted} from 'vue'
+import {ref, computed, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
 import {get, post} from "@/net"
 import {ElMessage, ElRate} from "element-plus"
 
+const router = useRouter()
 const myCourses = ref([])
+const total = ref(0)
+const page = ref(1)
+const pageSize = 9
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 
 const loadMyCourses = () => {
-  get('/api/course/my-courses', data => {
-    myCourses.value = (data || []).map(item => ({
+  const params = `page=${page.value}&pageSize=${pageSize}`
+  get('/api/course/my-courses?' + params, data => {
+    const list = data?.list || data || []
+    total.value = data?.total ?? list.length
+    myCourses.value = list.map(item => ({
       id: item.id || 0,
       courseId: item.courseId || item.id,
       progress: item.progress || 0,
@@ -33,6 +42,20 @@ const loadMyCourses = () => {
     myCourses.value = []
   })
 }
+
+const goToPage = (p) => {
+  if (p < 1 || p > totalPages.value) return
+  page.value = p
+  loadMyCourses()
+}
+
+const pageNumbers = computed(() => {
+  const t = totalPages.value, c = page.value
+  const pages = []
+  const start = Math.max(1, c - 2), end = Math.min(t, c + 2)
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
+})
 
 const unenrollCourse = (courseId) => {
   post('/api/course/unenroll', {courseId}, () => {
@@ -108,7 +131,7 @@ onMounted(() => {
   <div class="my-courses">
     <div class="tab-header">
       <h2 class="header-title">我的课程</h2>
-      <span class="course-count">{{ myCourses.length }} 门课程</span>
+      <span class="course-count">共 {{ total }} 门课程</span>
     </div>
 
     <div class="course-grid">
@@ -162,6 +185,12 @@ onMounted(() => {
             {{ getCheckInButtonText(relation) }}
           </button>
           <div class="btn-row">
+            <button class="btn btn-detail" @click="router.push('/course/' + relation.courseId)">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" width="13" height="13">
+                <path d="M4 6h16M4 12h16M4 18h10" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              详情
+            </button>
             <button class="btn btn-ghost" @click="openRatingDialog(relation, relation.rating > 0)">
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" width="13" height="13">
                 <path d="M10 1.5l2.06 4.17 4.6.67-3.33 3.24.79 4.59L10 11.9l-4.12 2.17.79-4.59L3.34 6.34l4.6-.67z"
@@ -178,6 +207,25 @@ onMounted(() => {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination" v-if="totalPages > 1">
+      <button class="pg-btn" :disabled="page <= 1" @click="goToPage(page - 1)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="12" height="12"><path d="M10 3L5 8l5 5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <template v-if="pageNumbers[0] > 1">
+        <button class="pg-btn" @click="goToPage(1)">1</button>
+        <span v-if="pageNumbers[0] > 2" class="pg-dots">…</span>
+      </template>
+      <button v-for="p in pageNumbers" :key="p" class="pg-btn" :class="{ active: p === page }" @click="goToPage(p)">{{ p }}</button>
+      <template v-if="pageNumbers[pageNumbers.length - 1] < totalPages">
+        <span v-if="pageNumbers[pageNumbers.length - 1] < totalPages - 1" class="pg-dots">…</span>
+        <button class="pg-btn" @click="goToPage(totalPages)">{{ totalPages }}</button>
+      </template>
+      <button class="pg-btn" :disabled="page >= totalPages" @click="goToPage(page + 1)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="12" height="12"><path d="M6 3l5 5-5 5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
 
     <div v-if="myCourses.length === 0" class="empty-state">
@@ -464,6 +512,20 @@ onMounted(() => {
   transform: none !important;
 }
 
+.btn-detail {
+  flex: 1;
+  background: rgba(0, 113, 227, 0.08);
+  backdrop-filter: blur(12px);
+  color: #0071e3;
+  border: 0.5px solid rgba(0, 113, 227, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.btn-detail:hover {
+  background: rgba(0, 113, 227, 0.14);
+  transform: translateY(-1px);
+}
+
 .btn-ghost {
   flex: 1;
   background: rgba(255, 255, 255, 0.55);
@@ -723,4 +785,20 @@ onMounted(() => {
     flex-direction: column;
   }
 }
+
+/* ── Pagination ── */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 28px; padding: 16px 0; }
+.pg-btn {
+  min-width: 36px; height: 36px; border-radius: 10px; border: none;
+  background: rgba(255,255,255,0.55); backdrop-filter: blur(12px);
+  border: 0.5px solid rgba(255,255,255,0.8);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.95) inset, 0 2px 8px rgba(0,0,0,0.06);
+  color: #1d1d1f; font-size: 14px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.pg-btn:hover:not(:disabled):not(.active) { background: rgba(255,255,255,0.78); transform: translateY(-1px); }
+.pg-btn.active { background: rgba(29,29,31,0.88); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.22); }
+.pg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pg-dots { color: #86868b; font-size: 14px; padding: 0 2px; }
 </style>

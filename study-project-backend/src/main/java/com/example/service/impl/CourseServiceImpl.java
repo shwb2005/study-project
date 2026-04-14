@@ -2,12 +2,16 @@ package com.example.service.impl;
 
 import com.example.entity.CommunityReview;
 import com.example.entity.Course;
+import com.example.entity.UserCourseFavorite;
 import com.example.entity.UserCourseRelation;
+import com.example.entity.UserStudyStats;
 import com.example.mapper.CommunityReplyLikeMapper;
 import com.example.mapper.CommunityReplyMapper;
 import com.example.mapper.CommunityReviewLikeMapper;
 import com.example.mapper.CommunityReviewMapper;
 import com.example.mapper.CourseMapper;
+import com.example.mapper.UserActivityLogMapper;
+import com.example.mapper.UserCourseFavoriteMapper;
 import com.example.mapper.UserCourseRelationMapper;
 import com.example.mapper.UserMapper;
 import com.example.mapper.UserProfileMapper;
@@ -19,7 +23,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CourseServiceImpl implements CourseService {
@@ -49,6 +55,12 @@ public class CourseServiceImpl implements CourseService {
 
     @Resource
     private CommunityReviewLikeMapper communityReviewLikeMapper;
+
+    @Resource
+    private UserCourseFavoriteMapper userCourseFavoriteMapper;
+
+    @Resource
+    private UserActivityLogMapper userActivityLogMapper;
 
     @Override
     public List<Course> getAllCourses() {
@@ -329,7 +341,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public List<Course> getCoursesWithOptions(String sortBy, String order, String teacherName, Integer page, Integer pageSize) {
         try {
-            return courseMapper.findWithOptions(sortBy, order, teacherName, page, pageSize);
+            return courseMapper.findWithOptions(sortBy, order, null, teacherName, page, pageSize);
         } catch (Exception e) {
             logger.error("高级查询失败: {}", e.getMessage(), e);
             return courseMapper.findAll();
@@ -344,5 +356,168 @@ public class CourseServiceImpl implements CourseService {
             logger.error("获取教师列表失败: {}", e.getMessage(), e);
             return List.of();
         }
+    }
+
+    @Override
+    public boolean toggleFavorite(Integer userId, Integer courseId) {
+        try {
+            UserCourseFavorite existing = userCourseFavoriteMapper.findByUserIdAndCourseId(userId, courseId);
+            if (existing != null) {
+                // 已收藏 → 取消
+                return userCourseFavoriteMapper.deleteByUserIdAndCourseId(userId, courseId) > 0;
+            } else {
+                // 未收藏 → 新增
+                UserCourseFavorite favorite = new UserCourseFavorite();
+                favorite.setUserId(userId);
+                favorite.setCourseId(courseId);
+                return userCourseFavoriteMapper.insert(favorite) > 0;
+            }
+        } catch (Exception e) {
+            logger.error("收藏操作失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public List<UserCourseFavorite> getUserFavorites(Integer userId) {
+        try {
+            return userCourseFavoriteMapper.findFavoritesByUserId(userId);
+        } catch (Exception e) {
+            logger.error("获取收藏列表失败: {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<Integer> getFavoriteCourseIds(Integer userId) {
+        try {
+            return userCourseFavoriteMapper.findFavoriteCourseIdsByUserId(userId);
+        } catch (Exception e) {
+            logger.error("获取收藏课程ID失败: {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public UserStudyStats getUserStats(Integer userId) {
+        UserStudyStats stats = new UserStudyStats();
+        try {
+            List<UserCourseRelation> relations = userCourseRelationMapper.findByUserIdWithCourse(userId);
+
+            int enrolledCount = relations.size();
+            int completedCount = 0;
+            int totalCheckIns = 0;
+            double totalProgress = 0;
+            int ratingCount = 0;
+            double totalRating = 0;
+            java.util.List<java.util.Map<String, Object>> courseProgressList = new java.util.ArrayList<>();
+
+            for (UserCourseRelation r : relations) {
+                // 完成数
+                if (r.getProgress() != null && r.getProgress() >= 100) completedCount++;
+                // 总签到
+                totalCheckIns += (r.getCheckInCount() != null) ? r.getCheckInCount() : 0;
+                // 总进度
+                totalProgress += (r.getProgress() != null) ? r.getProgress() : 0;
+                // 评分
+                if (r.getRating() != null && r.getRating() > 0) {
+                    ratingCount++;
+                    totalRating += r.getRating();
+                }
+                // 课程进度列表（给柱状图用）
+                java.util.Map<String, Object> item = new java.util.HashMap<>();
+                String courseName = (r.getCourse() != null) ? r.getCourse().getName() : "课程" + r.getCourseId();
+                item.put("name", courseName);
+                item.put("progress", r.getProgress() != null ? r.getProgress() : 0);
+                courseProgressList.add(item);
+            }
+
+            stats.setEnrolledCount(enrolledCount);
+            stats.setCompletedCount(completedCount);
+            stats.setTotalCheckIns(totalCheckIns);
+            stats.setAvgProgress(enrolledCount > 0 ? Math.round(totalProgress / enrolledCount * 10.0) / 10.0 : 0);
+            stats.setRatingCount(ratingCount);
+            stats.setAvgRating(ratingCount > 0 ? Math.round(totalRating / ratingCount * 10.0) / 10.0 : 0);
+            stats.setCourseProgressList(courseProgressList);
+
+            // 收藏数
+            List<Integer> favIds = userCourseFavoriteMapper.findFavoriteCourseIdsByUserId(userId);
+            stats.setFavoriteCount(favIds != null ? favIds.size() : 0);
+
+            // 最近7天签到趋势
+            stats.setCheckInTrend(userActivityLogMapper.findCheckInTrend(userId));
+
+        } catch (Exception e) {
+            logger.error("获取学习统计失败: {}", e.getMessage(), e);
+        }
+        return stats;
+    }
+
+    @Override
+    public Map<String, Object> getCoursesPaged(String search, String teacherName, String sortBy, String order, int page, int pageSize) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            int offset = (page - 1) * pageSize;
+            List<Course> list = courseMapper.findWithOptions(sortBy, order, search, teacherName, offset, pageSize);
+            int total = courseMapper.countWithOptions(search, teacherName);
+            result.put("list", list);
+            result.put("total", total);
+        } catch (Exception e) {
+            logger.error("分页查询课程失败: {}", e.getMessage(), e);
+            result.put("list", List.of());
+            result.put("total", 0);
+        }
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getUserCoursesPaged(Integer userId, int page, int pageSize) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            int offset = (page - 1) * pageSize;
+            List<UserCourseRelation> list = userCourseRelationMapper.findByUserIdPaged(userId, offset, pageSize);
+            int total = userCourseRelationMapper.countByUserId(userId);
+            result.put("list", list);
+            result.put("total", total);
+        } catch (Exception e) {
+            logger.error("分页查询用户课程失败: {}", e.getMessage(), e);
+            result.put("list", List.of());
+            result.put("total", 0);
+        }
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getUserFavoritesPaged(Integer userId, int page, int pageSize) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            int offset = (page - 1) * pageSize;
+            List<UserCourseFavorite> list = userCourseFavoriteMapper.findFavoritesByUserIdPaged(userId, offset, pageSize);
+            int total = userCourseFavoriteMapper.countByUserId(userId);
+            result.put("list", list);
+            result.put("total", total);
+        } catch (Exception e) {
+            logger.error("分页查询收藏失败: {}", e.getMessage(), e);
+            result.put("list", List.of());
+            result.put("total", 0);
+        }
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getAdminCoursesPaged(String search, int page, int pageSize) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            int offset = (page - 1) * pageSize;
+            List<Course> list = courseMapper.findAdminPaged(search, offset, pageSize);
+            int total = courseMapper.countAdmin(search);
+            result.put("list", list);
+            result.put("total", total);
+        } catch (Exception e) {
+            logger.error("管理员分页查询课程失败: {}", e.getMessage(), e);
+            result.put("list", List.of());
+            result.put("total", 0);
+        }
+        return result;
     }
 }

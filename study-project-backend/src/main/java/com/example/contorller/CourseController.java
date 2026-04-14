@@ -7,6 +7,9 @@ import com.example.entity.CommunityReview;
 import com.example.entity.CommunityReviewLike;
 import com.example.entity.CommunityReplyLike;
 import com.example.entity.UserCourseRelation;
+import com.example.entity.UserCourseFavorite;
+import com.example.entity.UserStudyStats;
+import com.example.entity.CourseDetail;
 import com.example.entity.user.AccountUser;
 import com.example.entity.user.Admin;
 import com.example.mapper.CommunityReplyMapper;
@@ -15,7 +18,9 @@ import com.example.mapper.CommunityReviewLikeMapper;
 import com.example.mapper.CommunityReviewMapper;
 import com.example.mapper.UserMapper;
 import com.example.mapper.UserProfileMapper;
+import com.example.service.ActivityLogService;
 import com.example.service.CourseService;
+import com.example.service.CourseDetailService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -24,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Collections;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/course")
@@ -52,13 +58,25 @@ public class CourseController {
     @Resource
     private UserProfileMapper userProfileMapper;
 
+    @Resource
+    private ActivityLogService activityLogService;
+
+    @Resource
+    private CourseDetailService courseDetailService;
+
     @GetMapping("/list")
-    public RestBean<List<Course>> getAllCourses() {
+    public RestBean<Map<String, Object>> getAllCourses(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "8") int pageSize,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String teacherName,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "desc") String order) {
         try {
-            List<Course> courses = courseService.getAllCourses();
-            return RestBean.success(courses);
+            Map<String, Object> data = courseService.getCoursesPaged(search, teacherName, sortBy, order, page, pageSize);
+            return RestBean.success(data);
         } catch (Exception e) {
-            return RestBean.failure(500, Collections.emptyList());
+            return RestBean.failure(500, (Map<String, Object>) null);
         }
     }
 
@@ -76,18 +94,31 @@ public class CourseController {
         }
     }
 
+    @GetMapping("/{id}/detail")
+    public RestBean<CourseDetail> getCourseDetail(@PathVariable Integer id) {
+        try {
+            CourseDetail detail = courseDetailService.getCourseDetail(id);
+            return RestBean.success(detail);
+        } catch (Exception e) {
+            return RestBean.success(null);
+        }
+    }
+
     @GetMapping("/my-courses")
-    public RestBean<List<UserCourseRelation>> getMyCourses(HttpSession session) {
+    public RestBean<Map<String, Object>> getMyCourses(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "8") int pageSize,
+            HttpSession session) {
         try {
             AccountUser user = (AccountUser) session.getAttribute("account");
             if (user == null) {
-                return RestBean.failure(401, Collections.emptyList());
+                return RestBean.failure(401, (Map<String, Object>) null);
             }
 
-            List<UserCourseRelation> courses = courseService.getUserCourses(user.getId());
-            return RestBean.success(courses);
+            Map<String, Object> data = courseService.getUserCoursesPaged(user.getId(), page, pageSize);
+            return RestBean.success(data);
         } catch (Exception e) {
-            return RestBean.failure(500, Collections.emptyList());
+            return RestBean.failure(500, (Map<String, Object>) null);
         }
     }
 
@@ -100,6 +131,8 @@ public class CourseController {
             }
 
             if (courseService.enrollCourse(user.getId(), courseId)) {
+                Course c = courseService.getCourseById(courseId);
+                activityLogService.log(user.getId(), "报名课程", "报名了课程「" + (c != null ? c.getName() : courseId) + "」");
                 return RestBean.success("报名成功");
             } else {
                 return RestBean.failure(400, "报名失败，可能已经报名该课程");
@@ -118,6 +151,8 @@ public class CourseController {
             }
 
             if (courseService.unenrollCourse(user.getId(), courseId)) {
+                Course c = courseService.getCourseById(courseId);
+                activityLogService.log(user.getId(), "退出课程", "退出了课程「" + (c != null ? c.getName() : courseId) + "」");
                 return RestBean.success("取消报名成功");
             } else {
                 return RestBean.failure(400, "取消报名失败");
@@ -140,6 +175,8 @@ public class CourseController {
             }
 
             if (courseService.rateCourse(user.getId(), courseId, rating, review, anonymous)) {
+                Course c = courseService.getCourseById(courseId);
+                activityLogService.log(user.getId(), "评价课程", "为课程「" + (c != null ? c.getName() : courseId) + "」评了 " + rating + " 星");
                 return RestBean.success("评分成功");
             } else {
                 return RestBean.failure(400, "评分失败");
@@ -158,6 +195,8 @@ public class CourseController {
             }
 
             if (courseService.checkIn(user.getId(), courseId)) {
+                Course c = courseService.getCourseById(courseId);
+                activityLogService.log(user.getId(), "课程签到", "在课程「" + (c != null ? c.getName() : courseId) + "」签到");
                 return RestBean.success("签到成功");
             } else {
                 return RestBean.failure(400, "签到失败，今日已签到或已达到最大签到次数");
@@ -226,6 +265,7 @@ public class CourseController {
             discussion.setIsAnonymous(anonymous);
 
             communityReviewMapper.insertDiscussion(discussion);
+            activityLogService.log(user.getId(), "发起讨论", "在课程「" + course.getName() + "」发起讨论");
             return RestBean.success("发布成功");
         } catch (Exception e) {
             logger.error("发布讨论失败", e);
@@ -507,6 +547,79 @@ public class CourseController {
         } catch (Exception e) {
             logger.error("删除回复失败", e);
             return RestBean.failure(500, "删除失败");
+        }
+    }
+
+    // ==================== 收藏 API ====================
+
+    @PostMapping("/favorite")
+    public RestBean<String> toggleFavorite(@RequestParam Integer courseId, HttpSession session) {
+        try {
+            AccountUser user = (AccountUser) session.getAttribute("account");
+            if (user == null) {
+                return RestBean.failure(401, "请先登录");
+            }
+
+            if (courseService.toggleFavorite(user.getId(), courseId)) {
+                boolean isFav = courseService.getFavoriteCourseIds(user.getId()).contains(courseId);
+                Course c = courseService.getCourseById(courseId);
+                activityLogService.log(user.getId(), isFav ? "收藏课程" : "取消收藏",
+                        (isFav ? "收藏了" : "取消收藏了") + "课程「" + (c != null ? c.getName() : courseId) + "」");
+                return RestBean.success("操作成功");
+            } else {
+                return RestBean.failure(400, "操作失败");
+            }
+        } catch (Exception e) {
+            logger.error("收藏操作失败", e);
+            return RestBean.failure(500, "操作失败");
+        }
+    }
+
+    @GetMapping("/favorites")
+    public RestBean<Map<String, Object>> getFavorites(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "8") int pageSize,
+            HttpSession session) {
+        try {
+            AccountUser user = (AccountUser) session.getAttribute("account");
+            if (user == null) {
+                return RestBean.failure(401, (Map<String, Object>) null);
+            }
+
+            Map<String, Object> data = courseService.getUserFavoritesPaged(user.getId(), page, pageSize);
+            return RestBean.success(data);
+        } catch (Exception e) {
+            return RestBean.failure(500, (Map<String, Object>) null);
+        }
+    }
+
+    @GetMapping("/favorite-ids")
+    public RestBean<List<Integer>> getFavoriteIds(HttpSession session) {
+        try {
+            AccountUser user = (AccountUser) session.getAttribute("account");
+            if (user == null) {
+                return RestBean.success(Collections.emptyList());
+            }
+
+            List<Integer> ids = courseService.getFavoriteCourseIds(user.getId());
+            return RestBean.success(ids);
+        } catch (Exception e) {
+            return RestBean.success(Collections.emptyList());
+        }
+    }
+
+    @GetMapping("/stats")
+    public RestBean<UserStudyStats> getStudyStats(HttpSession session) {
+        try {
+            AccountUser user = (AccountUser) session.getAttribute("account");
+            if (user == null) {
+                return RestBean.failure(401, (UserStudyStats) null);
+            }
+            UserStudyStats stats = courseService.getUserStats(user.getId());
+            return RestBean.success(stats);
+        } catch (Exception e) {
+            logger.error("获取学习统计失败", e);
+            return RestBean.failure(500, (UserStudyStats) null);
         }
     }
 

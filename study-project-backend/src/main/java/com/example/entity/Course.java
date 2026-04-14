@@ -149,6 +149,14 @@ public class Course {
     public void setMaxCheckInCount(Integer maxCheckInCount) {
         this.maxCheckInCount = maxCheckInCount;
     }
+
+    private String coverImage;
+    private String videoUrl;
+
+    public String getCoverImage() { return coverImage; }
+    public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
+    public String getVideoUrl() { return videoUrl; }
+    public void setVideoUrl(String videoUrl) { this.videoUrl = videoUrl; }
 }
 
 

@@ -7,6 +7,7 @@ import com.example.entity.user.AccountUser;
 import com.example.mapper.UserMapper;
 import com.example.service.AuthorizeService;
 import com.example.service.UserProfileService;
+import com.example.service.ActivityLogService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,6 +43,9 @@ public class SecurityConfiguration {
     UserProfileService userProfileService;
 
     @Resource
+    ActivityLogService activityLogService;
+
+    @Resource
     UserMapper userMapper;
 
     @Resource
@@ -60,6 +64,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/admin/login").permitAll()
                         .requestMatchers("/api/admin/logout").permitAll()
                         .requestMatchers("/api/admin/**").permitAll()
+                        .requestMatchers("/api/announcement/**").permitAll()
                         // 其他所有请求都需要认证（这行只能出现一次）
                         .anyRequest().authenticated()
                 )
@@ -132,6 +137,7 @@ public class SecurityConfiguration {
                 if (account != null) {
                     // 调用更新最后登录时间的方法
                     userProfileService.updateLastLoginTime(account.getId());
+                    activityLogService.log(account.getId(), "登录系统", "登录了系统");
                     System.out.println("=== 更新最后登录时间成功 ===");
                     System.out.println("用户ID: " + account.getId());
                     System.out.println("用户名: " + username);
