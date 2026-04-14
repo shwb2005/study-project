@@ -1,7 +1,8 @@
 <script setup>
 import {ref, computed, onMounted} from 'vue'
 import {get, post} from '@/net'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {ElMessage} from 'element-plus'
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
 
 // ========== 内部分区切换 ==========
 const activeTab = ref('reviews') // 'reviews' | 'discussions'
@@ -170,18 +171,35 @@ const clickReplyTo = (reviewId, replyId, userId, username) => {
 }
 
 const deleteReply = (reviewId, replyId) => {
-  ElMessageBox.confirm('确定要删除这条回复吗？', '删除确认', {
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    post('/api/course/community/reply/delete', {replyId}, () => {
+  deleteMessage.value = '确定要删除这条回复吗？'
+  deleteTarget.value = { reviewId, replyId }
+  showDeleteModal.value = true
+}
+
+const deleteDiscussionReply = (discussionId, replyId) => {
+  deleteMessage.value = '确定要删除这条回复吗？'
+  deleteTarget.value = { discussionId, replyId, type: 'discussion' }
+  showDeleteModal.value = true
+}
+
+const showDeleteModal = ref(false)
+const deleteMessage = ref('')
+const deleteTarget = ref(null)
+const confirmDelete = () => {
+  const target = deleteTarget.value
+  if (!target) return
+  if (target.type === 'discussion') {
+    post('/api/course/community/reply/delete', {replyId: target.replyId}, () => {
       ElMessage.success('删除成功')
-      repliesMap.value[reviewId] = repliesMap.value[reviewId].filter(r => r.id !== replyId)
-    }, () => {
-      ElMessage.error('删除失败')
-    })
-  }).catch(() => {})
+      discussionRepliesMap.value[target.discussionId] = discussionRepliesMap.value[target.discussionId].filter(r => r.id !== target.replyId)
+    }, () => { ElMessage.error('删除失败') })
+  } else {
+    post('/api/course/community/reply/delete', {replyId: target.replyId}, () => {
+      ElMessage.success('删除成功')
+      repliesMap.value[target.reviewId] = repliesMap.value[target.reviewId].filter(r => r.id !== target.replyId)
+    }, () => { ElMessage.error('删除失败') })
+  }
+  deleteTarget.value = null
 }
 
 // ========== 讨论相关 ==========
@@ -320,21 +338,6 @@ const toggleDiscussionReplyLike = (replyId, type) => {
 const clickDiscussionReplyTo = (discussionId, replyId, userId, username) => {
   discussionReplyToMap.value[discussionId] = {replyId, userId, username}
   discussionShowReplyInput.value[discussionId] = true
-}
-
-const deleteDiscussionReply = (discussionId, replyId) => {
-  ElMessageBox.confirm('确定要删除这条回复吗？', '删除确认', {
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    post('/api/course/community/reply/delete', {replyId}, () => {
-      ElMessage.success('删除成功')
-      discussionRepliesMap.value[discussionId] = discussionRepliesMap.value[discussionId].filter(r => r.id !== replyId)
-    }, () => {
-      ElMessage.error('删除失败')
-    })
-  }).catch(() => {})
 }
 
 const createDiscussion = () => {
@@ -785,6 +788,9 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- 删除确认弹窗 -->
+    <ConfirmDeleteModal v-model="showDeleteModal" :message="deleteMessage" @confirm="confirmDelete" />
   </div>
 </template>
 

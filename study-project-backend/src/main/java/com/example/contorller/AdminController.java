@@ -1,6 +1,7 @@
 package com.example.contorller;
 
 
+import com.example.annotation.RequireModule;
 import com.example.entity.CommunityReply;
 import com.example.entity.user.Admin;
 import com.example.entity.RestBean;
@@ -60,6 +61,7 @@ public class AdminController {
             Admin safeAdmin = new Admin();
             safeAdmin.setId(admin.getId());
             safeAdmin.setUsername(admin.getUsername());
+            safeAdmin.setRole(admin.getRole());
             // 不设置密码字段
             return new RestBean<>(200, true, safeAdmin);
         } else {
@@ -75,10 +77,8 @@ public class AdminController {
     }
 
     @GetMapping("/list")
-    public RestBean<List<Admin>> getAdminList(HttpSession session) {
-
-        // 打印session信息
-        Admin sessionAdmin = (Admin) session.getAttribute("admin");
+    @RequireModule("admin_manager")
+    public RestBean<List<Admin>> getAdminList() {
 
         try {
             List<Admin> admins = adminService.getAllAdmins();
@@ -94,8 +94,10 @@ public class AdminController {
 
 
     @PostMapping("/add")
+    @RequireModule("admin_manager")
     public RestBean<String> addAdmin(@RequestParam String username,
-                                     @RequestParam String password) {
+                                     @RequestParam String password,
+                                     @RequestParam String role) {
         try {
 
             // 检查用户名是否已存在
@@ -107,6 +109,7 @@ public class AdminController {
             Admin admin = new Admin();
             admin.setUsername(username);
             admin.setPassword(password);
+            admin.setRole(role);
 
             // 添加新管理员
             boolean success = adminService.addAdmin(admin);
@@ -123,10 +126,10 @@ public class AdminController {
 
 
     @PostMapping("/delete")
+    @RequireModule("admin_manager")
     public RestBean<String> deleteAdmin(@RequestParam Integer id, HttpSession session) {
         try {
             Admin currentAdmin = (Admin) session.getAttribute("admin");
-            // 防止删除自己
             if (currentAdmin != null && currentAdmin.getId().equals(id)) {
                 return RestBean.failure(400, "不能删除当前登录的管理员");
             }
@@ -143,14 +146,30 @@ public class AdminController {
         }
     }
 
-    @PostMapping("/community/reply/delete")
-    public RestBean<String> deleteReply(@RequestParam Integer replyId, HttpSession session) {
+    @PostMapping("/update")
+    @RequireModule("admin_manager")
+    public RestBean<String> updateAdmin(@RequestParam Integer id,
+                                        @RequestParam String role) {
         try {
-            Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                return RestBean.failure(401, "请先登录管理员账户");
+            Admin admin = new Admin();
+            admin.setId(id);
+            admin.setRole(role);
+            boolean success = adminService.updateAdmin(admin);
+            if (success) {
+                return RestBean.success("管理员角色更新成功");
+            } else {
+                return RestBean.failure(500, "更新失败");
             }
+        } catch (Exception e) {
+            logger.error("更新管理员失败", e);
+            return RestBean.failure(500, "更新管理员失败: " + e.getMessage());
+        }
+    }
 
+    @PostMapping("/community/reply/delete")
+    @RequireModule("community_admin")
+    public RestBean<String> deleteReply(@RequestParam Integer replyId) {
+        try {
             CommunityReply reply = communityReplyMapper.findWithReviewUserById(replyId);
             if (reply == null) {
                 return RestBean.failure(404, "回复不存在");
@@ -170,13 +189,9 @@ public class AdminController {
     }
 
     @PostMapping("/community/review/delete")
-    public RestBean<String> deleteReview(@RequestParam Integer reviewId, HttpSession session) {
+    @RequireModule("community_admin")
+    public RestBean<String> deleteReview(@RequestParam Integer reviewId) {
         try {
-            Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                return RestBean.failure(401, "请先登录管理员账户");
-            }
-
             int rows = communityReviewMapper.deleteReview(reviewId);
             if (rows > 0) {
                 return RestBean.success("删除成功");

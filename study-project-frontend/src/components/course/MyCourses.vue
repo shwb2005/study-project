@@ -3,6 +3,7 @@ import {ref, computed, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 import {get, post} from "@/net"
 import {ElMessage, ElRate} from "element-plus"
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
 
 const router = useRouter()
 const myCourses = ref([])
@@ -57,12 +58,21 @@ const pageNumbers = computed(() => {
   return pages
 })
 
-const unenrollCourse = (courseId) => {
-  post('/api/course/unenroll', {courseId}, () => {
-    ElMessage.success('取消报名成功');
+const unenrollCourse = (courseId, courseName) => {
+  unenrollTarget.value = courseId
+  unenrollMessage.value = '确定要退出课程「' + courseName + '」吗？退出后将删除你的学习记录。'
+  showUnenrollModal.value = true
+}
+
+const showUnenrollModal = ref(false)
+const unenrollTarget = ref(null)
+const unenrollMessage = ref('')
+const handleUnenrollConfirm = () => {
+  post('/api/course/unenroll', {courseId: unenrollTarget.value}, () => {
+    ElMessage.success('已退出课程');
     loadMyCourses()
   }, () => {
-    ElMessage.error('取消报名失败')
+    ElMessage.error('退出失败')
   })
 }
 
@@ -198,7 +208,7 @@ onMounted(() => {
               </svg>
               {{ relation.rating > 0 ? '改评分' : '评分' }}
             </button>
-            <button class="btn btn-danger" @click="unenrollCourse(relation.courseId)">
+            <button class="btn btn-danger" @click="unenrollCourse(relation.courseId, relation.course?.name)">
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" width="13" height="13">
                 <path d="M14 6L6 14M6 6l8 8" stroke-width="2" stroke-linecap="round"/>
               </svg>
@@ -286,6 +296,8 @@ onMounted(() => {
         </div>
       </template>
     </el-dialog>
+
+    <ConfirmDeleteModal v-model="showUnenrollModal" :message="unenrollMessage" @confirm="handleUnenrollConfirm" />
   </div>
 </template>
 

@@ -1,5 +1,6 @@
 package com.example.contorller;
 
+import com.example.annotation.RequireModule;
 import com.example.entity.Announcement;
 import com.example.entity.RestBean;
 import com.example.entity.user.AccountUser;
@@ -55,14 +56,12 @@ public class AnnouncementController {
 
     // 管理员：发布公告
     @PostMapping("/admin/add")
+    @RequireModule("announcement_admin")
     public RestBean<String> add(@RequestParam String title,
                                 @RequestParam String content,
                                 HttpSession session) {
         try {
             Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                return RestBean.failure(401, "请先登录管理员账户");
-            }
             Announcement a = new Announcement();
             a.setTitle(title);
             a.setContent(content);
@@ -77,15 +76,11 @@ public class AnnouncementController {
 
     // 管理员：修改公告
     @PostMapping("/admin/update")
+    @RequireModule("announcement_admin")
     public RestBean<String> update(@RequestParam Integer id,
                                    @RequestParam String title,
-                                   @RequestParam String content,
-                                   HttpSession session) {
+                                   @RequestParam String content) {
         try {
-            Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                return RestBean.failure(401, "请先登录管理员账户");
-            }
             Announcement a = new Announcement();
             a.setId(id);
             a.setTitle(title);
@@ -100,12 +95,9 @@ public class AnnouncementController {
 
     // 管理员：删除公告
     @PostMapping("/admin/delete")
-    public RestBean<String> delete(@RequestParam Integer id, HttpSession session) {
+    @RequireModule("announcement_admin")
+    public RestBean<String> delete(@RequestParam Integer id) {
         try {
-            Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                return RestBean.failure(401, "请先登录管理员账户");
-            }
             announcementMapper.deleteById(id);
             return RestBean.success("删除成功");
         } catch (Exception e) {

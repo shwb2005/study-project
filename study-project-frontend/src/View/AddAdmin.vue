@@ -53,8 +53,8 @@
             </div>
             <div class="stat-sep"></div>
             <div class="stat-item">
-              <span class="stat-n">{{ admin.username ? admin.username.substring(0, 2) + '…' : 'N/A' }}</span>
-              <span class="stat-l">用户名</span>
+              <span class="stat-n">{{ roleLabels[admin.role] || admin.role || '--' }}</span>
+              <span class="stat-l">角色</span>
             </div>
             <div class="stat-sep"></div>
             <div class="stat-item">
@@ -64,6 +64,12 @@
           </div>
 
           <div class="card-footer">
+            <button v-if="admin.id !== currentAdminId" class="btn-edit-full" @click="handleEdit(admin)">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" width="13" height="13">
+                <path d="M14.5 3.5a2.12 2.12 0 013 3L6 18H3v-3L14.5 3.5z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              编辑角色
+            </button>
             <button v-if="admin.id !== currentAdminId" class="btn-danger-full" @click="handleDelete(admin)">
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" width="13" height="13">
                 <path d="M14 6L6 14M6 6l8 8" stroke-width="2" stroke-linecap="round"/>
@@ -99,6 +105,14 @@
           <el-form-item label="密码" prop="password">
             <el-input v-model="addForm.password" type="password" placeholder="请输入密码" show-password maxlength="20" />
           </el-form-item>
+          <el-form-item label="角色" prop="role">
+            <el-select v-model="addForm.role" placeholder="请选择角色" style="width: 100%">
+              <el-option label="超级管理员" value="super_admin" />
+              <el-option label="课程管理" value="course_admin" />
+              <el-option label="社区管理" value="community_admin" />
+              <el-option label="公告管理" value="announcement_admin" />
+            </el-select>
+          </el-form-item>
         </el-form>
         <template #footer>
           <div class="dlg-footer">
@@ -111,15 +125,46 @@
         </template>
       </el-dialog>
     </div>
+
+    <!-- 删除确认弹窗 -->
+    <ConfirmDeleteModal v-model="showDeleteModal" :message="deleteMessage" @confirm="confirmDelete" />
+
+    <!-- 编辑管理员弹窗 -->
+    <el-dialog v-model="showEditDialog" title="编辑管理员角色" width="500px"
+               class="glass-dialog">
+      <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="80px">
+        <el-form-item label="用户名">
+          <el-input v-model="editForm.username" disabled />
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-select v-model="editForm.role" placeholder="请选择角色" style="width: 100%">
+            <el-option label="超级管理员" value="super_admin" />
+            <el-option label="课程管理" value="course_admin" />
+            <el-option label="社区管理" value="community_admin" />
+            <el-option label="公告管理" value="announcement_admin" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dlg-footer">
+          <button class="dlg-btn dlg-cancel" @click="showEditDialog = false">取消</button>
+          <button class="dlg-btn dlg-confirm" @click="handleUpdate" :disabled="updating">
+            <span v-if="updating" class="spinner"></span>
+            {{ updating ? '更新中…' : '确认更新' }}
+          </button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useStore } from '@/stores/index.js'
 import { get, post } from '@/net/index.js'
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -135,8 +180,38 @@ const handleScroll = () => {
 
 const loading = ref(false)
 const adding = ref(false)
+const updating = ref(false)
 const showAddDialog = ref(false)
+const showEditDialog = ref(false)
 const adminList = ref([])
+const showDeleteModal = ref(false)
+const deleteMessage = ref('')
+const deleteTarget = ref(null)
+const editFormRef = ref()
+const editForm = reactive({
+  id: null,
+  username: '',
+  role: 'course_admin'
+})
+const editRules = {
+  role: [
+    { required: true, message: '请选择角色', trigger: 'change' }
+  ]
+}
+const confirmDelete = () => {
+  if (deleteTarget.value) {
+    post('/api/admin/delete', { id: deleteTarget.value.id },
+        (message) => {
+          ElMessage.success(message || '管理员删除成功')
+          loadAdminList()
+        },
+        (message) => {
+          ElMessage.error(message || '删除失败')
+        }
+    )
+    deleteTarget.value = null
+  }
+}
 const currentAdminId = ref(null)
 
 // 表单引用
@@ -145,7 +220,8 @@ const addFormRef = ref()
 // 表单数据
 const addForm = reactive({
   username: '',
-  password: ''
+  password: '',
+  role: 'course_admin'
 })
 
 // 表单验证规则
@@ -157,10 +233,18 @@ const addRules = {
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur' }
+  ],
+  role: [
+    { required: true, message: '请选择角色', trigger: 'change' }
   ]
 }
 
-// 格式化日期
+const roleLabels = {
+  super_admin: '超级管理员',
+  course_admin: '课程管理',
+  community_admin: '社区管理',
+  announcement_admin: '公告管理'
+}
 const formatDate = (dateString) => {
   try {
     const date = new Date(dateString)
@@ -227,7 +311,8 @@ const handleAddAdmin = () => {
 
       post('/api/admin/add', {
             username: addForm.username,
-            password: addForm.password
+            password: addForm.password,
+            role: addForm.role
           },
           (message) => {
             console.log('✅ 添加管理员成功:', message)
@@ -250,26 +335,41 @@ const handleAddAdmin = () => {
 
 // 删除管理员
 const handleDelete = (admin) => {
-  ElMessageBox.confirm(
-      `确定要删除管理员 "${admin.username}" 吗？此操作不可恢复。`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-  ).then(() => {
-    post('/api/admin/delete', { id: admin.id },
-        (message) => {
-          ElMessage.success(message || '管理员删除成功')
-          loadAdminList()
-        },
-        (message) => {
-          ElMessage.error(message || '删除失败')
-        }
-    )
-  }).catch(() => {
-    // 用户取消
+  deleteMessage.value = `确定要删除管理员 "${admin.username}" 吗？此操作不可恢复。`
+  deleteTarget.value = admin
+  showDeleteModal.value = true
+}
+
+// 打开编辑弹窗
+const handleEdit = (admin) => {
+  editForm.id = admin.id
+  editForm.username = admin.username
+  editForm.role = admin.role || 'course_admin'
+  showEditDialog.value = true
+}
+
+// 提交更新
+const handleUpdate = () => {
+  if (!editFormRef.value) return
+  editFormRef.value.validate((valid) => {
+    if (valid) {
+      updating.value = true
+      post('/api/admin/update', {
+            id: editForm.id,
+            role: editForm.role
+          },
+          (message) => {
+            ElMessage.success(message)
+            showEditDialog.value = false
+            loadAdminList()
+            updating.value = false
+          },
+          (message) => {
+            ElMessage.error(message || '更新失败')
+            updating.value = false
+          }
+      )
+    }
   })
 }
 
@@ -281,6 +381,7 @@ const handleCloseDialog = () => {
   } else {
     addForm.username = ''
     addForm.password = ''
+    addForm.role = 'course_admin'
   }
 }
 
@@ -453,7 +554,19 @@ onUnmounted(() => {
 .stat-sep { width: 0.5px; height: 28px; background: rgba(0,0,0,0.08); }
 
 /* ── Footer buttons ── */
-.card-footer { }
+.card-footer { display: flex; flex-direction: column; gap: 8px; }
+.btn-edit-full {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 11px;
+  background: rgba(0,113,227,0.08);
+  backdrop-filter: blur(8px); color: #0071e3;
+  border: 0.5px solid rgba(0,113,227,0.2);
+  border-radius: 10px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all 0.15s;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset;
+}
+.btn-edit-full:hover { background: rgba(0,113,227,0.15); transform: translateY(-1px); }
 .btn-danger-full {
   display: flex; align-items: center; justify-content: center; gap: 7px;
   width: 100%; padding: 11px;

@@ -36,30 +36,34 @@
         </div>
 
         <div class="actions-section">
-          <div style="margin-top: 20px">
+          <div style="margin-top: 20px" v-if="canManageAdmins">
             <el-button @click="goToAddAdmin" style="width: 100%; height: 48px;" plain>
               <i class="el-icon-user" style="margin-right: 10px; font-size: 16px;"></i>
               <span style="font-size: 15px;">管理员管理</span>
             </el-button>
           </div>
-          <div style="margin-top: 20px">
+          <div style="margin-top: 20px" v-if="canManageCourses">
             <el-button @click="goToAddCourse" style="width: 100%; height: 48px;" plain>
               <i class="el-icon-notebook-2" style="margin-right: 10px; font-size: 16px;"></i>
               <span style="font-size: 15px;">课程管理</span>
             </el-button>
           </div>
-          <div style="margin-top: 20px">
+          <div style="margin-top: 20px" v-if="canManageCommunity">
             <el-button @click="goToCommunity" style="width: 100%; height: 48px;" plain>
               <i class="el-icon-chat-dot-round" style="margin-right: 10px; font-size: 16px;"></i>
               <span style="font-size: 15px;">社区管理</span>
             </el-button>
           </div>
-          <div style="margin-top: 20px">
+          <div style="margin-top: 20px" v-if="canManageAnnouncement">
             <el-button @click="goToAnnouncement" style="width: 100%; height: 48px;" plain>
               <i class="el-icon-bell" style="margin-right: 10px; font-size: 16px;"></i>
               <span style="font-size: 15px;">公告管理</span>
             </el-button>
           </div>
+        </div>
+
+        <div style="margin-top: 16px; color: #86868b; font-size: 12px;">
+          当前角色：{{ roleLabel }}
         </div>
 
         <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #eee;">
@@ -85,9 +89,33 @@
 import { useRouter } from 'vue-router'
 import { useStore } from "@/stores/index.js";
 import { ElMessage } from "element-plus";
+import { computed } from 'vue';
 
 const router = useRouter()
 const store = useStore()
+
+const adminRole = computed(() => store.auth.admin?.role)
+
+const roleLabels = {
+  super_admin: '超级管理员',
+  course_admin: '课程管理',
+  community_admin: '社区管理',
+  announcement_admin: '公告管理'
+}
+const roleLabel = computed(() => roleLabels[adminRole.value] || adminRole.value || '')
+
+const canManageAdmins = computed(() =>
+  adminRole.value === 'super_admin'
+)
+const canManageCourses = computed(() =>
+  adminRole.value === 'super_admin' || adminRole.value === 'course_admin'
+)
+const canManageCommunity = computed(() =>
+  adminRole.value === 'super_admin' || adminRole.value === 'community_admin'
+)
+const canManageAnnouncement = computed(() =>
+  adminRole.value === 'super_admin' || adminRole.value === 'announcement_admin'
+)
 
 const goToAddAdmin = () => {
   router.push('/add-admin')

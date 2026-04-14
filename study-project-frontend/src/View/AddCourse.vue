@@ -231,15 +231,19 @@
         </template>
       </el-dialog>
     </div>
+
+    <!-- 删除确认弹窗 -->
+    <ConfirmDeleteModal v-model="showDeleteModal" :message="deleteMessage" @confirm="confirmDelete" />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useStore } from '@/stores/index.js'
 import { get, post } from '@/net/index.js'
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -264,6 +268,23 @@ const page = ref(1)
 const pageSize = 9
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 const search = ref('')
+const showDeleteModal = ref(false)
+const deleteMessage = ref('')
+const deleteTarget = ref(null)
+const confirmDelete = () => {
+  if (deleteTarget.value) {
+    post('/api/admin/course/delete', {courseId: deleteTarget.value.id},
+        (message) => {
+          ElMessage.success(message || '课程删除成功')
+          loadCourseList()
+        },
+        (message) => {
+          ElMessage.error(message || '删除失败')
+        }
+    )
+    deleteTarget.value = null
+  }
+}
 let searchTimer = null
 
 const onSearchInput = () => {
@@ -591,27 +612,9 @@ const handleUpdateCourse = () => {
 
 // 删除课程
 const handleDelete = (course) => {
-  ElMessageBox.confirm(
-      `确定要删除课程 "${course.name}" 吗？此操作将删除所有相关的报名记录，且不可恢复。`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-  ).then(() => {
-    post('/api/admin/course/delete', {courseId: course.id},
-        (message) => {
-          ElMessage.success(message || '课程删除成功')
-          loadCourseList()
-        },
-        (message) => {
-          ElMessage.error(message || '删除失败')
-        }
-    )
-  }).catch(() => {
-    // 用户取消
-  })
+  deleteMessage.value = `确定要删除课程 "${course.name}" 吗？此操作将删除所有相关的报名记录，且不可恢复。`
+  deleteTarget.value = course
+  showDeleteModal.value = true
 }
 
 // 关闭弹窗

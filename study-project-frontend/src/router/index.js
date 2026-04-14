@@ -1,5 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useStore } from "@/stores/index.js";
+import { ElMessage } from "element-plus";
+
+const roleAllowedRoutes = {
+  super_admin: ['AddAdmin', 'AddCourse', 'AdminCommunity', 'AdminAnnouncement'],
+  course_admin: ['AddCourse'],
+  community_admin: ['AdminCommunity'],
+  announcement_admin: ['AdminAnnouncement']
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -124,6 +132,15 @@ router.beforeEach((to, from, next) => {
   } else if (isAdminPage && !isAdminLoggedIn) {
     // 访问管理员页面但未登录，跳转到管理员登录页
     next('/admin-login')
+  } else if (isAdminPage && isAdminLoggedIn) {
+    const adminRole = store.auth.admin?.role
+    const allowedRoutes = roleAllowedRoutes[adminRole] || []
+    if (to.name !== 'admin' && !allowedRoutes.includes(to.name)) {
+      ElMessage.warning('权限不足')
+      next('/admin')
+      return
+    }
+    next()
   } else {
     // 其他情况正常放行
     next()

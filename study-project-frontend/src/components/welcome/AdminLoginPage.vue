@@ -4,7 +4,7 @@ import {ElMessage} from "element-plus";
 import {reactive, ref, onMounted} from "vue";
 import router from "@/router/index.js";
 import {useStore} from "@/stores/index.js";
-import {post} from "@/net/index.js";
+import {post, get} from "@/net/index.js";
 
 const store = useStore()
 const loading = ref(false)
@@ -55,38 +55,42 @@ const login = () => {
   post('/api/admin/login', {
     username: form.username,
     password: form.password
-  }, (message) => {
-    ElMessage.success(message)
-
-    const adminAuth = {
-      username: form.username,
-      isAdmin: true,
-      loginTime: new Date().getTime()
-    }
-
-    store.auth.admin = adminAuth
-
-    if (form.remember) {
-      try {
-        const rememberedInfo = {
-          username: form.username,
-          password: form.password
-        }
-        localStorage.setItem('remembered_admin', JSON.stringify(rememberedInfo))
-      } catch (error) {
-        console.error('保存管理员凭据失败:', error)
+  }, () => {
+    get('/api/admin/me', (adminInfo) => {
+      const adminAuth = {
+        username: adminInfo.username,
+        role: adminInfo.role,
+        isAdmin: true,
+        loginTime: new Date().getTime()
       }
-    } else {
-      localStorage.removeItem('remembered_admin')
-    }
+      store.auth.admin = adminAuth
 
-    try {
-      localStorage.setItem('admin_auth', JSON.stringify(adminAuth))
-    } catch (error) {
-      console.error('保存到 localStorage 失败:', error)
-    }
+      if (form.remember) {
+        try {
+          const rememberedInfo = {
+            username: form.username,
+            password: form.password
+          }
+          localStorage.setItem('remembered_admin', JSON.stringify(rememberedInfo))
+        } catch (error) {
+          console.error('保存管理员凭据失败:', error)
+        }
+      } else {
+        localStorage.removeItem('remembered_admin')
+      }
 
-    router.push('/admin')
+      try {
+        localStorage.setItem('admin_auth', JSON.stringify(adminAuth))
+      } catch (error) {
+        console.error('保存到 localStorage 失败:', error)
+      }
+
+      ElMessage.success('登录成功')
+      router.push('/admin')
+    }, () => {
+      ElMessage.error('获取管理员信息失败')
+      loading.value = false
+    })
   }, (message) => {
     ElMessage.error('登录失败: ' + message)
     loading.value = false

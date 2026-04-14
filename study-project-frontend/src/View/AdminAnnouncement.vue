@@ -84,6 +84,9 @@
         </template>
       </el-dialog>
     </div>
+
+    <!-- 删除确认弹窗 -->
+    <ConfirmDeleteModal v-model="showDeleteModal" message="确定删除该公告？" @confirm="confirmDelete" />
   </div>
 </template>
 
@@ -91,7 +94,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { get, post } from '@/net'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
 
 const router = useRouter()
 const list = ref([])
@@ -103,6 +107,17 @@ const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize))
 const showDialog = ref(false)
 const isEdit = ref(false)
 const form = ref({ id: null, title: '', content: '' })
+const showDeleteModal = ref(false)
+const deleteTargetId = ref(null)
+const confirmDelete = () => {
+  if (deleteTargetId.value !== null) {
+    post('/api/announcement/admin/delete', { id: deleteTargetId.value }, () => {
+      ElMessage.success('删除成功')
+      loadList()
+    }, () => { ElMessage.error('删除失败') })
+    deleteTargetId.value = null
+  }
+}
 
 const scrollBlur = ref(0)
 const scrollOverlay = ref(0)
@@ -134,9 +149,8 @@ const handleSubmit = () => {
 }
 
 const handleDelete = (id) => {
-  ElMessageBox.confirm('确定删除该公告？', '提示', { type: 'warning' }).then(() => {
-    post('/api/announcement/admin/delete', { id }, () => { ElMessage.success('删除成功'); loadList() }, () => { ElMessage.error('删除失败') })
-  }).catch(() => {})
+  deleteTargetId.value = id
+  showDeleteModal.value = true
 }
 
 onMounted(() => { loadList(); window.addEventListener('scroll', handleScroll, { passive: true }) })

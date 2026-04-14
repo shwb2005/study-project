@@ -1,13 +1,12 @@
 package com.example.contorller;
 
+import com.example.annotation.RequireModule;
 import com.example.entity.RestBean;
 import com.example.entity.Course;
 import com.example.entity.CourseDetail;
-import com.example.entity.user.Admin;
 import com.example.service.CourseService;
 import com.example.service.CourseDetailService;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +16,8 @@ import java.util.Collections;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin")  // 管理员专用路径
+@RequestMapping("/api/admin")
+@RequireModule("course_admin")
 public class AdminCourseController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminCourseController.class);
@@ -32,15 +32,8 @@ public class AdminCourseController {
     public RestBean<Map<String, Object>> getAdminCourseList(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "8") int pageSize,
-            @RequestParam(required = false) String search,
-            HttpSession session) {
+            @RequestParam(required = false) String search) {
         try {
-            Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                logger.warn("无权限操作: session 中未找到管理员信息");
-                return RestBean.failure(401, (Map<String, Object>) null);
-            }
-
             Map<String, Object> data = courseService.getAdminCoursesPaged(search, page, pageSize);
             return RestBean.success(data);
         } catch (Exception e) {
@@ -50,12 +43,8 @@ public class AdminCourseController {
     }
 
     @GetMapping("/course/detail")
-    public RestBean<CourseDetail> getCourseDetail(@RequestParam Integer courseId, HttpSession session) {
+    public RestBean<CourseDetail> getCourseDetail(@RequestParam Integer courseId) {
         try {
-            Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                return RestBean.failure(401, (CourseDetail) null);
-            }
             CourseDetail detail = courseDetailService.getCourseDetail(courseId);
             return RestBean.success(detail);
         } catch (Exception e) {
@@ -75,14 +64,8 @@ public class AdminCourseController {
                                            @RequestParam(required = false) String audience,
                                            @RequestParam(required = false) String materials,
                                            @RequestParam(required = false) String coverImage,
-                                           @RequestParam(required = false) String videoUrl,
-                                           HttpSession session) {
+                                           @RequestParam(required = false) String videoUrl) {
         try {
-            Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                return RestBean.failure(401, "请先登录管理员账户");
-            }
-
             Course course = new Course();
             course.setName(name);
             course.setDescription(description);
@@ -122,15 +105,8 @@ public class AdminCourseController {
     }
 
     @PostMapping("/course/delete")
-    public RestBean<String> deleteAdminCourse(@RequestParam Integer courseId, HttpSession session) {
+    public RestBean<String> deleteAdminCourse(@RequestParam Integer courseId) {
         try {
-
-            // 检查管理员权限
-            Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                return RestBean.failure(401, "请先登录管理员账户");
-            }
-
             boolean success = courseService.deleteCourse(courseId);
             if (success) {
                 return RestBean.success("课程删除成功");
@@ -157,14 +133,8 @@ public class AdminCourseController {
                                               @RequestParam(required = false) String audience,
                                               @RequestParam(required = false) String materials,
                                               @RequestParam(required = false) String coverImage,
-                                              @RequestParam(required = false) String videoUrl,
-                                              HttpSession session) {
+                                              @RequestParam(required = false) String videoUrl) {
         try {
-            Admin admin = (Admin) session.getAttribute("admin");
-            if (admin == null) {
-                return RestBean.failure(401, "请先登录管理员账户");
-            }
-
             Course course = new Course();
             course.setId(id);
             course.setName(name);

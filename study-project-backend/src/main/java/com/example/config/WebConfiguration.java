@@ -1,5 +1,6 @@
 package com.example.config;
 
+import com.example.interceptor.AdminAuthInterceptor;
 import com.example.interceptor.AuthorizeInterceptor;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,9 @@ public class WebConfiguration implements WebMvcConfigurer {
     @Resource
     AuthorizeInterceptor authorizeInterceptor;
 
+    @Resource
+    AdminAuthInterceptor adminAuthInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authorizeInterceptor)
@@ -23,5 +27,9 @@ public class WebConfiguration implements WebMvcConfigurer {
                         "/api/admin/**",
                         "/api/course/community"
                 );
+
+        registry.addInterceptor(adminAuthInterceptor)
+                .addPathPatterns("/api/admin/**", "/api/announcement/admin/**")
+                .excludePathPatterns("/api/admin/login", "/api/admin/logout");
     }
 }

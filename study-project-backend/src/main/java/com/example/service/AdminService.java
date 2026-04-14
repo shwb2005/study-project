@@ -13,4 +13,5 @@ public interface AdminService {
     List<Admin> getAllAdmins();
     boolean addAdmin(Admin admin);
     boolean deleteAdmin(Integer id);
+    boolean updateAdmin(Admin admin);
 }

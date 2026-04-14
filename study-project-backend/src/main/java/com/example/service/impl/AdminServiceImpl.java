@@ -87,4 +87,20 @@ public class AdminServiceImpl implements AdminService {
             return false;
         }
     }
+
+    @Override
+    public boolean updateAdmin(Admin admin) {
+        System.out.println("=== 更新管理员角色 ===");
+        System.out.println("管理员ID: " + admin.getId() + ", 新角色: " + admin.getRole());
+
+        try {
+            int result = adminMapper.updateAdmin(admin);
+            boolean success = result > 0;
+            System.out.println("更新结果: " + (success ? "成功" : "失败"));
+            return success;
+        } catch (Exception e) {
+            System.out.println("更新管理员异常: " + e.getMessage());
+            return false;
+        }
+    }
 }

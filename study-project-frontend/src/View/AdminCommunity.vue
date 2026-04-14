@@ -207,15 +207,19 @@
         <p class="empty-title">暂无讨论</p>
       </div>
     </div>
+
+    <!-- 删除确认弹窗 -->
+    <ConfirmDeleteModal v-model="showDeleteModal" :message="deleteMessage" @confirm="confirmDelete" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useStore } from '@/stores/index.js'
 import { get, post } from '@/net/index.js'
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -237,6 +241,20 @@ const repliesMap = ref({})
 const discussionRepliesMap = ref({})
 const showReplies = ref({})
 const showDiscussionReplies = ref({})
+const showDeleteModal = ref(false)
+const deleteMessage = ref('')
+const deleteAction = ref(null)
+
+const openDeleteModal = (msg, action) => {
+  deleteMessage.value = msg
+  deleteAction.value = action
+  showDeleteModal.value = true
+}
+
+const confirmDelete = () => {
+  if (deleteAction.value) deleteAction.value()
+  deleteAction.value = null
+}
 
 const formatDate = (d) => {
   if (!d) return ''
@@ -288,48 +306,36 @@ const loadDiscussionReplies = (discussionId) => {
 }
 
 const handleDeleteReply = (reviewId, replyId) => {
-  ElMessageBox.confirm('确定要删除这条回复吗？此操作不可恢复。', '删除确认', {
-    confirmButtonText: '确定删除',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
+  openDeleteModal('确定要删除这条回复吗？此操作不可恢复。', () => {
     post('/api/admin/community/reply/delete', { replyId }, () => {
       ElMessage.success('回复删除成功')
       repliesMap.value[reviewId] = repliesMap.value[reviewId].filter(r => r.id !== replyId)
     }, (message) => {
       ElMessage.error(message || '删除失败')
     })
-  }).catch(() => {})
+  })
 }
 
 const handleDeleteDiscussionReply = (discussionId, replyId) => {
-  ElMessageBox.confirm('确定要删除这条回复吗？此操作不可恢复。', '删除确认', {
-    confirmButtonText: '确定删除',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
+  openDeleteModal('确定要删除这条回复吗？此操作不可恢复。', () => {
     post('/api/admin/community/reply/delete', { replyId }, () => {
       ElMessage.success('回复删除成功')
       discussionRepliesMap.value[discussionId] = discussionRepliesMap.value[discussionId].filter(r => r.id !== replyId)
     }, (message) => {
       ElMessage.error(message || '删除失败')
     })
-  }).catch(() => {})
+  })
 }
 
 const handleDeleteDiscussion = (discussionId) => {
-  ElMessageBox.confirm('确定要删除这条讨论吗？此操作不可恢复。', '删除确认', {
-    confirmButtonText: '确定删除',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
+  openDeleteModal('确定要删除这条讨论吗？此操作不可恢复。', () => {
     post('/api/admin/community/review/delete', { reviewId: discussionId }, () => {
       ElMessage.success('删除成功')
       discussions.value = discussions.value.filter(d => d.id !== discussionId)
     }, (message) => {
       ElMessage.error(message || '删除失败')
     })
-  }).catch(() => {})
+  })
 }
 
 onMounted(async () => {
