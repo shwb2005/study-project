@@ -11,8 +11,16 @@ const course = ref(null)
 const detail = ref(null)
 const loading = ref(true)
 
-const scrollBlur = ref(0)
+const bgRef = ref(null)
 const scrollOverlay = ref(0)
+
+const handleScroll = () => {
+  const progress = Math.min(window.scrollY / 380, 1)
+  if (bgRef.value) {
+    bgRef.value.style.filter = `blur(${progress * 48}px) saturate(140%)`
+  }
+  scrollOverlay.value = progress * 0.52
+}
 
 const loadCourse = () => {
   get('/api/course/' + courseId, data => {
@@ -28,12 +36,6 @@ const loadDetail = () => {
   }, () => {
     detail.value = null
   })
-}
-
-const handleScroll = () => {
-  const progress = Math.min(window.scrollY / 380, 1)
-  scrollBlur.value = progress * 48
-  scrollOverlay.value = progress * 0.52
 }
 
 onMounted(() => {
@@ -63,9 +65,8 @@ const sections = [
 
 <template>
   <div class="page">
-    <div class="bg"></div>
-    <div class="bg-dim"
-         :style="{backdropFilter: `blur(${scrollBlur}px) saturate(140%)`, WebkitBackdropFilter: `blur(${scrollBlur}px) saturate(140%)`, background: `rgba(240,246,252,${scrollOverlay})`}"></div>
+    <div class="bg" ref="bgRef"></div>
+    <div class="bg-dim" :style="{ background: `rgba(240,246,252,${scrollOverlay})` }"></div>
 
     <header class="navbar">
       <button class="nav-btn" @click="router.back()">
@@ -80,12 +81,6 @@ const sections = [
 
     <main class="main" v-if="course">
 
-      <!-- 视频 -->
-      <div v-if="course.videoUrl" class="video-wrap">
-        <iframe v-if="isEmbedUrl(course.videoUrl)" :src="course.videoUrl" class="video-iframe"
-                frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-        <video v-else :src="course.videoUrl" class="video-player" controls></video>
-      </div>
 
       <!-- 课程基本信息 -->
       <section class="glass-card hero-card">
@@ -127,6 +122,23 @@ const sections = [
           </div>
         </div>
       </section>
+
+      <!-- 视频 -->
+      <div v-if="course.videoUrl" class="video-card">
+        <div class="video-header">
+          <div class="video-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
+              <polygon points="5 3 19 12 5 21 5 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            课程视频
+          </div>
+        </div>
+        <div class="video-wrap">
+          <iframe v-if="isEmbedUrl(course.videoUrl)" :src="course.videoUrl" class="video-iframe"
+                  frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+          <video v-else :src="course.videoUrl" class="video-player" controls></video>
+        </div>
+      </div>
 
       <!-- 课程详情板块 -->
       <template v-if="detail">
@@ -186,15 +198,17 @@ const sections = [
 
 .bg {
   position: fixed; inset: 0; z-index: 0;
-  background-image: url('@/assets/images/3.jpeg');
+  background-image: url('@/assets/images/4.jpg');
   background-size: cover;
   background-position: center 40%;
   background-repeat: no-repeat;
+  transition: filter 0.1s linear;
 }
 
 .bg-dim {
   position: fixed; inset: 0; z-index: 1;
-  transition: backdrop-filter 0.1s linear, -webkit-backdrop-filter 0.1s linear, background 0.1s linear;
+  transition: background 0.1s linear;
+  pointer-events: none;
 }
 
 .navbar {
@@ -256,10 +270,28 @@ const sections = [
 }
 
 /* Video */
-.video-wrap {
-  border-radius: 20px; overflow: hidden;
-  box-shadow: 0 2px 32px rgba(0,0,0,0.08);
+.video-card {
+  background: rgba(255,255,255,0.62);
+  backdrop-filter: saturate(200%) blur(40px);
+  -webkit-backdrop-filter: saturate(200%) blur(40px);
+  border-radius: 20px;
   border: 0.5px solid rgba(255,255,255,0.85);
+  box-shadow: 0 2px 32px rgba(0,0,0,0.08), 0 0.5px 0 rgba(255,255,255,0.95) inset;
+  overflow: hidden;
+}
+.video-header {
+  padding: 18px 22px 14px;
+  border-bottom: 0.5px solid rgba(0,0,0,0.07);
+}
+.video-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+.video-wrap {
   background: #000;
 }
 .video-iframe, .video-player {

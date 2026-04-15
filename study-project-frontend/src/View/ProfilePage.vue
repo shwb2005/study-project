@@ -240,12 +240,14 @@ const totalCheckInCount = computed(() => {
   return total
 })
 
-const scrollBlur = ref(0)
+const bgRef = ref(null)
 const scrollOverlay = ref(0)
 
 const handleScroll = () => {
   const progress = Math.min(window.scrollY / 380, 1)
-  scrollBlur.value = progress * 48
+  if (bgRef.value) {
+    bgRef.value.style.filter = `blur(${progress * 48}px) saturate(140%)`
+  }
   scrollOverlay.value = progress * 0.52
 }
 
@@ -267,8 +269,8 @@ onUnmounted(() => {
   <div class="page">
 
     <!-- Background layers -->
-    <div class="bg"></div>
-    <div class="bg-dim" :style="{ backdropFilter: `blur(${scrollBlur}px) saturate(140%)`, WebkitBackdropFilter: `blur(${scrollBlur}px) saturate(140%)`, background: `rgba(240,246,252,${scrollOverlay})` }"></div>
+    <div class="bg" ref="bgRef"></div>
+    <div class="bg-dim" :style="{ background: `rgba(240,246,252,${scrollOverlay})` }"></div>
 
     <!-- Navbar -->
     <header class="navbar">
@@ -442,17 +444,18 @@ onUnmounted(() => {
 /* ─── Background image ─── */
 .bg {
   position: fixed; inset: 0; z-index: 0;
-  background-image: url('@/assets/images/3.jpeg');
+  background-image: url('@/assets/images/4.jpg');
   background-size: cover;
   background-position: center 40%;
   background-repeat: no-repeat;
+  transition: filter 0.1s linear;
 }
 
 /* 滚动驱动的动态模糊遮罩 — blur 和透明度由 JS 控制 */
 .bg-dim {
   position: fixed; inset: 0; z-index: 1;
-  /* 初始无模糊无遮罩，由 :style 绑定动态值 */
-  transition: backdrop-filter 0.1s linear, -webkit-backdrop-filter 0.1s linear, background 0.1s linear;
+  transition: background 0.1s linear;
+  pointer-events: none;
 }
 
 /* ─── Navbar — frosted glass ─── */
