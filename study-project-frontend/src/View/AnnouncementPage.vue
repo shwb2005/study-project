@@ -61,12 +61,25 @@
       </div>
 
       <!-- 详情弹窗 -->
-      <el-dialog v-model="showDetail" :title="detailData.title" width="520px" class="glass-dialog">
-        <div class="detail-content">
-          <p class="detail-text">{{ detailData.content }}</p>
-          <span class="detail-time">{{ formatDateTime(detailData.createdAt) }}</span>
+      <div class="notice-overlay" v-if="showDetail">
+        <div class="brutalist-card">
+          <div class="brutalist-card__header">
+            <div class="brutalist-card__icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            </div>
+            <div class="brutalist-card__alert">公告详情</div>
+            <button class="close-btn" @click="showDetail = false">✕</button>
+          </div>
+          <div class="brutalist-card__message">
+            <div style="font-size:1rem;font-weight:900;margin-bottom:8px;">{{ detailData.title }}</div>
+            <div style="color:#444;line-height:1.7;">{{ detailData.content }}</div>
+            <div style="font-size:0.75rem;color:#888;margin-top:12px;">{{ formatDateTime(detailData.createdAt) }}</div>
+          </div>
+          <div class="brutalist-card__actions">
+            <button class="brutalist-card__button brutalist-card__button--read" @click="showDetail = false">关闭</button>
+          </div>
         </div>
-      </el-dialog>
+      </div>
     </div>
   </div>
 </template>
@@ -196,5 +209,137 @@ onUnmounted(() => { window.removeEventListener('scroll', handleScroll) })
   .all-courses { padding: 16px 14px 52px; }
   .page-title { font-size: 22px; }
   .glass-card { padding: 18px 16px; }
+}
+
+/* Brutalist 弹窗样式 */
+.notice-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.brutalist-card {
+  width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 4px solid #000;
+  background-color: #fff;
+  padding: 1.5rem;
+  box-shadow: 10px 10px 0 #000;
+  font-family: "Arial", sans-serif;
+}
+
+.brutalist-card__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #000;
+  padding-bottom: 1rem;
+}
+
+.brutalist-card__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+  padding: 0.5rem;
+}
+
+.brutalist-card__icon svg { height: 1.5rem; width: 1.5rem; fill: #fff; }
+
+.brutalist-card__alert {
+  flex: 1;
+  font-weight: 900;
+  color: #000;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #000;
+}
+
+.brutalist-card__message {
+  margin-top: 1rem;
+  color: #000;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  border-bottom: 2px solid #000;
+  padding-bottom: 1rem;
+  font-weight: 600;
+}
+
+.brutalist-card__actions {
+  margin-top: 1rem;
+}
+
+.brutalist-card__button {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 3px solid #000;
+  background-color: #fff;
+  color: #000;
+  position: relative;
+  transition: all 0.2s ease;
+  box-shadow: 5px 5px 0 #000;
+  overflow: hidden;
+  text-decoration: none;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.brutalist-card__button--read {
+  background-color: #000;
+  color: #fff;
+}
+
+.brutalist-card__button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: all 0.6s;
+}
+
+.brutalist-card__button:hover::before {
+  left: 100%;
+}
+
+.brutalist-card__button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 #000;
+}
+
+.brutalist-card__button--read:hover {
+  background-color: #D4A574;
+  border-color: #D4A574;
+  color: #fff;
+  box-shadow: 7px 7px 0 #8B6B4A;
+}
+
+.brutalist-card__button:active {
+  transform: translate(5px, 5px);
+  box-shadow: none;
 }
 </style>
