@@ -5,6 +5,7 @@ import AllCourses from '@/components/course/AllCourses.vue'
 import MyCourses from '@/components/course/MyCourses.vue'
 import FavoriteCourses from '@/components/course/FavoriteCourses.vue'
 import Community from '@/components/course/Community.vue'
+import ModuleTab from '@/components/ModuleTab.vue'
 
 const router = useRouter()
 const activeTab = ref('all')
@@ -34,15 +35,9 @@ onUnmounted(() => {
     <div class="bg-dim" :style="{ background: `rgba(240,246,252,${scrollOverlay})` }"></div>
 
     <header class="navbar">
-      <button class="nav-btn" @click="router.push('/index')">
-        <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
-          <path d="M8 1L1 8L8 15" stroke="currentColor" stroke-width="1.7"
-                stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        返回
-      </button>
-      <span class="navbar-title">课程中心</span>
-      <button class="nav-btn" @click="router.push('/profile')">个人中心</button>
+      <div class="navbar-center">
+        <ModuleTab />
+      </div>
     </header>
 
     <main class="main">
@@ -85,7 +80,7 @@ onUnmounted(() => {
 
 .bg {
   position: fixed; inset: 0; z-index: 0;
-  background-image: url('@/assets/images/3.jpeg');
+  background-image: url('@/assets/images/4.jpg');
   background-size: cover;
   background-position: center 40%;
   background-repeat: no-repeat;
@@ -101,13 +96,18 @@ onUnmounted(() => {
 .navbar {
   position: sticky; top: 0; z-index: 100;
   height: 52px;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: center;
   padding: 0 20px;
   background: rgba(255,255,255,0.65);
   backdrop-filter: saturate(200%) blur(40px);
   -webkit-backdrop-filter: saturate(200%) blur(40px);
   border-bottom: 0.5px solid rgba(255,255,255,0.65);
   box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+.navbar-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .nav-btn {
   display: flex; align-items: center; gap: 5px;

@@ -41,45 +41,47 @@ const onConfirm = () => {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .delete-modal {
-  width: 320px;
-  background: #1f2937;
-  border: 1px solid #374151;
+  width: 340px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 0.5px solid rgba(255, 255, 255, 0.8);
   border-radius: 20px;
   padding: 28px 24px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
 }
 
 .delete-icon {
   width: 52px;
   height: 52px;
-  color: #6b7280;
+  color: #ff3b30;
   margin-bottom: 16px;
 }
 
 .delete-title {
   font-size: 18px;
   font-weight: 700;
-  color: #f3f4f6;
+  color: #1d1d1f;
   margin: 0 0 10px;
 }
 
 .delete-message {
   font-size: 14px;
-  color: #9ca3af;
+  color: #86868b;
   line-height: 1.6;
   margin: 0 0 24px;
-  max-width: 260px;
+  max-width: 280px;
 }
 
 .delete-actions {
@@ -90,42 +92,38 @@ const onConfirm = () => {
 
 .btn-cancel {
   flex: 1;
-  padding: 10px 0;
-  border-radius: 50px;
-  border: 2px solid #4b5563;
-  background: transparent;
-  color: #9ca3af;
+  padding: 11px 0;
+  border-radius: 12px;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  color: #1d1d1f;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-cancel:hover {
-  border-color: #6b7280;
-  color: #d1d5db;
-  background: rgba(107, 114, 128, 0.1);
+  background: rgba(0, 0, 0, 0.10);
 }
 
 .btn-confirm {
   flex: 1;
-  padding: 10px 0;
-  border-radius: 50px;
-  border: 2px solid #10b981;
-  background: #10b981;
+  padding: 11px 0;
+  border-radius: 12px;
+  border: none;
+  background: #ff3b30;
   color: #fff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-confirm:hover {
-  background: #059669;
-  border-color: #059669;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  background: #d63126;
 }
 
 .btn-confirm:active {

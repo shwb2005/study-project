@@ -1,11 +1,21 @@
 <template>
   <div class="container">
     <div class="left-panel">
-      <div class="space-bg">
-        <div class="obj">
-          <div class="objchild">
-            <div class="inn6"></div>
-          </div>
+      <div class="books-container">
+        <div class="book book-1">
+          <div class="book-cover"></div>
+          <div class="book-spine"></div>
+          <div class="book-pages"></div>
+        </div>
+        <div class="book book-2">
+          <div class="book-cover"></div>
+          <div class="book-spine"></div>
+          <div class="book-pages"></div>
+        </div>
+        <div class="book book-3">
+          <div class="book-cover"></div>
+          <div class="book-spine"></div>
+          <div class="book-pages"></div>
         </div>
       </div>
       <div class="image-content">
@@ -28,20 +38,30 @@
         </div>
 
         <div class="actions-section">
-          <button class="action-btn primary" @click="goToCourses">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span>浏览课程</span>
-          </button>
-
           <button class="action-btn primary" @click="goToProfile">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <circle cx="12" cy="7" r="4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <span>个人资料</span>
+            <span>个人中心</span>
+          </button>
+
+          <button class="action-btn primary" @click="goToCourses">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>课程中心</span>
+          </button>
+
+          <button class="action-btn primary" @click="router.push('/study-plan')">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
+              <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
+              <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
+              <line x1="3" y1="10" x2="21" y2="10" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>学习计划</span>
           </button>
 
           <button class="action-btn primary" @click="router.push('/announcements')" style="position: relative;">
@@ -174,7 +194,7 @@ const goToProfile = () => {
   height: 100vh;
   width: 100%;
   overflow: hidden;
-  background: #fafafa;
+  background: linear-gradient(135deg, #FFF8E7 0%, #F5E6D3 100%);
 }
 
 /* 左侧区域 - 占80% */
@@ -182,7 +202,7 @@ const goToProfile = () => {
   flex: 4;
   position: relative;
   overflow: hidden;
-  background: #1a1a1a;
+  background: linear-gradient(135deg, #FFF8E7 0%, #F5E6D3 50%, #E8D5C4 100%);
 }
 
 .space-bg {
@@ -196,7 +216,7 @@ const goToProfile = () => {
   position: absolute;
   left: 40px;
   bottom: 40px;
-  color: white;
+  color: #2C1810;
   text-align: left;
   max-width: 500px;
   z-index: 20;
@@ -207,84 +227,139 @@ const goToProfile = () => {
   font-weight: 700;
   margin-bottom: 15px;
   letter-spacing: -0.5px;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 10px rgba(44, 24, 16, 0.1);
 }
 
 .subtitle {
   font-size: 20px;
-  opacity: 0.95;
+  opacity: 0.85;
   line-height: 1.5;
   font-weight: 400;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  color: #5C4033;
 }
 
-/* ===== 3D Cube Animation ===== */
-.obj {
-  position: absolute;
-  width: 300px;
-  height: 300px;
-  transform-style: preserve-3d;
-  transition: 0.5s all;
-  transform: rotateX(-25deg) rotateY(20deg);
-  top: calc(50% - 150px);
-  left: calc(50% - 150px);
-}
-
-.objchild {
-  animation: rotate 10s infinite linear;
-  transform-style: preserve-3d;
+/* ===== Books Animation ===== */
+.books-container {
   position: absolute;
   width: 100%;
   height: 100%;
-}
-
-.objchild::after {
-  content: "";
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  filter: blur(30px);
-  box-shadow: 0 0 300px 30px rgba(255,255,255,0.6);
-  transform: rotateX(90deg) scale(1.1) translateZ(-180px);
-}
-
-.inn6 {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: rgb(21, 21, 21);
-  transform: rotateX(90deg) translateZ(150px);
-  animation: updown 4s infinite ease-in-out;
-}
-
-@keyframes rotate {
-  0% {
-    transform: rotate3d(0,1,0,0deg);
-  }
-  100% {
-    transform: rotate3d(0,1,0,360deg);
-  }
-}
-
-@keyframes updown {
-  0% {
-    transform: translateY(150px) rotateX(90deg) translateZ(150px);
-  }
-  50% {
-    transform: translateY(300px) rotateX(90deg) translateZ(150px);
-  }
-  100% {
-    transform: translateY(150px) rotateX(90deg) translateZ(150px);
-  }
-}
-
-/* 右侧内容区域 - 占20%，简约无框风格 */
-.right-panel {
-  flex: 1; /* 20%比例 */
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
+  gap: 40px;
+}
+
+.book {
+  position: relative;
+  width: 120px;
+  height: 165px;
+  transform-style: preserve-3d;
+  animation: float 5s ease-in-out infinite;
+}
+
+.book-1 {
+  animation-delay: 0s;
+  --rotate: -15deg;
+}
+
+.book-2 {
+  animation-delay: 0.5s;
+  --rotate: 5deg;
+}
+
+.book-3 {
+  animation-delay: 1s;
+  --rotate: -5deg;
+}
+
+.book-cover {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px 8px 8px 4px;
+  box-shadow: 0 10px 30px rgba(212, 165, 116, 0.3);
+}
+
+.book-1 .book-cover {
+  background: linear-gradient(135deg, #D4A574 0%, #C4956A 100%);
+}
+
+.book-2 .book-cover {
+  background: linear-gradient(135deg, #8B7355 0%, #6B5344 100%);
+}
+
+.book-3 .book-cover {
+  background: linear-gradient(135deg, #A0826D 0%, #8B6B5A 100%);
+}
+
+.book-spine {
+  position: absolute;
+  left: -12px;
+  top: 0;
+  width: 12px;
+  height: 100%;
+  border-radius: 6px 0 0 6px;
+}
+
+.book-1 .book-spine {
+  background: linear-gradient(180deg, #B8956A 0%, #A8855A 100%);
+}
+
+.book-2 .book-spine {
+  background: linear-gradient(180deg, #7B6345 0%, #6B5335 100%);
+}
+
+.book-3 .book-spine {
+  background: linear-gradient(180deg, #90725D 0%, #80624D 100%);
+}
+
+.book-pages {
+  position: absolute;
+  right: -10px;
+  top: 12px;
+  width: 10px;
+  height: calc(100% - 24px);
+  background: repeating-linear-gradient(
+    180deg,
+    #FFF8E7 0px,
+    #FFF8E7 2px,
+    #F5E6D3 2px,
+    #F5E6D3 4px
+  );
+  border-radius: 0 5px 5px 0;
+  box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.book::before {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 8px;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.15) 0%, transparent 70%);
+  filter: blur(4px);
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(var(--rotate, 0deg));
+  }
+  50% {
+    transform: translateY(-35px) rotate(var(--rotate, 0deg));
+  }
+}
+
+/* 右侧内容区域 - 玻璃态效果 */
+.right-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 248, 231, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   overflow-y: auto;
   padding: 30px 20px;
   position: relative;
@@ -301,8 +376,8 @@ const goToProfile = () => {
   height: 70%;
   background: linear-gradient(to bottom,
   transparent 0%,
-  #e5e5e5 15%,
-  #e5e5e5 85%,
+  rgba(212, 165, 116, 0.3) 15%,
+  rgba(212, 165, 116, 0.3) 85%,
   transparent 100%);
 }
 
@@ -320,7 +395,7 @@ const goToProfile = () => {
 .welcome-title {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #2C1810;
   margin: 0 0 20px 0;
   letter-spacing: -0.5px;
 }
@@ -330,7 +405,7 @@ const goToProfile = () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #6e6e73;
+  color: #8B7355;
   font-size: 15px;
   font-weight: 500;
 }
@@ -338,11 +413,11 @@ const goToProfile = () => {
 .user-icon {
   width: 18px;
   height: 18px;
-  color: #8e8e93;
+  color: #A0826D;
 }
 
 .username {
-  color: #1a1a1a;
+  color: #2C1810;
   font-weight: 600;
 }
 
@@ -376,17 +451,17 @@ const goToProfile = () => {
 }
 
 .action-btn.primary {
-  background: #f5f5f7;
-  color: #1a1a1a;
-  border: 1px solid #e5e5e5;
+  background: rgba(255, 255, 255, 0.7);
+  color: #2C1810;
+  border: 1px solid rgba(212, 165, 116, 0.3);
 }
 
 .action-btn.primary:hover {
-  background: #1a1a1a;
+  background: #D4A574;
   color: #ffffff;
-  border-color: #1a1a1a;
+  border-color: #D4A574;
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 20px rgba(212, 165, 116, 0.4);
 }
 
 .action-btn.primary:active {
@@ -398,8 +473,8 @@ const goToProfile = () => {
   height: 1px;
   background: linear-gradient(90deg,
   transparent 0%,
-  #e5e5e5 20%,
-  #e5e5e5 80%,
+  rgba(212, 165, 116, 0.25) 20%,
+  rgba(212, 165, 116, 0.25) 80%,
   transparent 100%);
   margin: 32px 0;
 }
@@ -410,17 +485,17 @@ const goToProfile = () => {
 }
 
 .action-btn.danger {
-  background: #ffffff;
-  color: #ff3b30;
-  border: 1px solid #ffcccb;
+  background: rgba(255, 59, 48, 0.08);
+  color: #E57373;
+  border: 1px solid rgba(255, 59, 48, 0.2);
 }
 
 .action-btn.danger:hover {
-  background: #ff3b30;
-  color: #ffffff;
-  border-color: #ff3b30;
+  background: rgba(255, 59, 48, 0.15);
+  color: #FF5252;
+  border-color: rgba(255, 59, 48, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(255, 59, 48, 0.25);
+  box-shadow: 0 8px 20px rgba(255, 59, 48, 0.25);
 }
 
 .action-btn.danger:active {
@@ -429,7 +504,7 @@ const goToProfile = () => {
 
 /* 底部信息 */
 .footer-info {
-  color: #8e8e93;
+  color: #A0826D;
   font-size: 12px;
   line-height: 1.6;
 }
@@ -466,11 +541,8 @@ const goToProfile = () => {
   .main-title { font-size: 28px; margin-bottom: 10px; }
   .subtitle { font-size: 16px; }
 
-  .astronaut {
-    width: 150px;
-    height: 180px;
-    top: calc(30% - 90px);
-    left: calc(50% - 75px);
+  .books-container {
+    transform: scale(0.8);
   }
 
   .right-panel {
@@ -495,7 +567,7 @@ const goToProfile = () => {
   .image-content { bottom: 20px; }
   .main-title { font-size: 24px; }
   .subtitle { font-size: 14px; }
-  .astronaut { width: 120px; height: 144px; top: calc(25% - 72px); left: calc(50% - 60px); }
+  .books-container { transform: scale(0.65); }
   .right-panel { padding: 30px 15px; }
   .welcome-title { font-size: 24px; }
 }
@@ -504,7 +576,7 @@ const goToProfile = () => {
   .image-content { bottom: 15px; }
   .main-title { font-size: 22px; margin-bottom: 8px; }
   .subtitle { font-size: 13px; }
-  .astronaut { width: 130px; height: 156px; top: calc(50% - 78px); left: calc(50% - 65px); }
+  .books-container { transform: scale(0.6); }
 }
 
 /* Badge */

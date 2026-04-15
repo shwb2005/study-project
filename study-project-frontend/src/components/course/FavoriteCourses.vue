@@ -12,7 +12,7 @@ const page = ref(1)
 const pageSize = 9
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 
-const NORMAL_INTERVAL = 400
+const NORMAL_INTERVAL = 2000
 const ERROR_PAUSE_INTERVAL = 10000
 let pollingTimer = null
 
@@ -28,7 +28,7 @@ const loadFavorites = () => {
 
 const loadMyCourses = () => {
   return new Promise((resolve, reject) => {
-    get('/api/course/my-courses', resolve, reject)
+    get('/api/course/my-courses?page=1&pageSize=999', resolve, reject)
   }).then(data => {
     const list = data?.list || data || []
     myCourses.value = list.map(item => ({

@@ -161,7 +161,7 @@ onUnmounted(() => { window.removeEventListener('scroll', handleScroll) })
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 .page { min-height: 100vh; position: relative; font-family: -apple-system, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; color: #1d1d1f; }
-.bg { position: fixed; inset: 0; z-index: 0; background-image: url('@/assets/images/2.jpeg'); background-size: cover; background-position: center; }
+.bg { position: fixed; inset: 0; z-index: 0; background-image: url('@/assets/images/4.jpg'); background-size: cover; background-position: center; }
 .bg-dim { position: fixed; inset: 0; z-index: 1; transition: backdrop-filter 0.1s linear, -webkit-backdrop-filter 0.1s linear, background 0.1s linear; }
 
 .navbar { position: sticky; top: 0; z-index: 100; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: rgba(255,255,255,0.65); backdrop-filter: saturate(200%) blur(40px); -webkit-backdrop-filter: saturate(200%) blur(40px); border-bottom: 0.5px solid rgba(255,255,255,0.65); box-shadow: 0 1px 0 rgba(0,0,0,0.05); }

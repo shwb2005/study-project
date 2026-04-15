@@ -3,12 +3,9 @@
     <div class="bg"></div>
     <div class="bg-dim" :style="{ backdropFilter: `blur(${scrollBlur}px)`, background: `rgba(240,246,252,${scrollOverlay})` }"></div>
     <header class="navbar">
-      <button class="nav-btn" @click="router.push('/index')">
-        <svg width="9" height="16" viewBox="0 0 9 16" fill="none"><path d="M8 1L1 8L8 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        返回
-      </button>
-      <span class="navbar-title">通知公告</span>
-      <button class="nav-btn" @click="router.push('/profile')">个人中心</button>
+      <div class="navbar-center">
+        <ModuleTab />
+      </div>
     </header>
 
     <div class="all-courses">
@@ -79,6 +76,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { get } from '@/net'
 import { useStore } from '@/stores'
+import ModuleTab from '@/components/ModuleTab.vue'
 
 const router = useRouter()
 const store = useStore()
@@ -128,13 +126,14 @@ onUnmounted(() => { window.removeEventListener('scroll', handleScroll) })
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 .page { min-height: 100vh; position: relative; font-family: -apple-system, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; color: #1d1d1f; }
-.bg { position: fixed; inset: 0; z-index: 0; background-image: url('@/assets/images/3.jpeg'); background-size: cover; background-position: center; }
+.bg { position: fixed; inset: 0; z-index: 0; background-image: url('@/assets/images/4.jpg'); background-size: cover; background-position: center; }
 .bg-dim { position: fixed; inset: 0; z-index: 1; transition: backdrop-filter 0.1s linear, -webkit-backdrop-filter 0.1s linear, background 0.1s linear; }
 
-.navbar { position: sticky; top: 0; z-index: 100; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: rgba(255,255,255,0.65); backdrop-filter: saturate(200%) blur(40px); -webkit-backdrop-filter: saturate(200%) blur(40px); border-bottom: 0.5px solid rgba(255,255,255,0.65); box-shadow: 0 1px 0 rgba(0,0,0,0.05); }
+.navbar { position: sticky; top: 0; z-index: 100; height: 52px; display: flex; align-items: center; justify-content: center; padding: 0 20px; background: rgba(255,255,255,0.65); backdrop-filter: saturate(200%) blur(40px); -webkit-backdrop-filter: saturate(200%) blur(40px); border-bottom: 0.5px solid rgba(255,255,255,0.65); box-shadow: 0 1px 0 rgba(0,0,0,0.05); }
 .nav-btn { display: flex; align-items: center; gap: 5px; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 15px; color: #0071e3; padding: 0; transition: opacity 0.1s; }
 .nav-btn:hover { opacity: 0.7; }
 .navbar-title { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+.navbar-center { display: flex; align-items: center; justify-content: center; }
 
 .all-courses { position: relative; z-index: 2; max-width: 800px; margin: 0 auto; padding: 28px 20px 72px; }
 

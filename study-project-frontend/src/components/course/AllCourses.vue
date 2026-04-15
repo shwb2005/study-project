@@ -24,36 +24,61 @@ const loadCourses = () => {
   get('/api/course/list?' + params, data => {
     courses.value = data?.list || []
     total.value = data?.total || 0
+    loadMyCourses()
+    loadFavoriteIds()
   }, () => { courses.value = []; total.value = 0 })
 }
 
 const loadMyCourses = () => {
-  get('/api/course/my-courses', data => {
-    myCourses.value = data?.list || data || []
+  get('/api/course/my-courses?page=1&pageSize=999', data => {
+    const list = data?.list || data || []
+    myCourses.value = list
   }, () => { myCourses.value = [] })
 }
 
 const loadFavoriteIds = () => {
-  get('/api/course/favorite-ids', data => {
+  get('/api/course/favorite-ids?page=1&pageSize=999', data => {
     favoriteIds.value = data || []
   }, () => { favoriteIds.value = [] })
 }
 
-const isEnrolled = (courseId) => myCourses.value.some(c => c.courseId === courseId)
+const isEnrolled = (courseId) => myCourses.value.some(c => (c.courseId || c.id) === courseId)
 const isFavorited = (courseId) => favoriteIds.value.includes(courseId)
 
 const toggleFavorite = (courseId) => {
+  const wasFavorited = favoriteIds.value.includes(courseId)
+  // 乐观更新
+  if (wasFavorited) {
+    favoriteIds.value = favoriteIds.value.filter(id => id !== courseId)
+  } else {
+    favoriteIds.value.push(courseId)
+  }
   post('/api/course/favorite', { courseId }, () => {
-    ElMessage.success(isFavorited(courseId) ? '已取消收藏' : '已收藏')
-    loadFavoriteIds()
-  }, () => { ElMessage.error('操作失败') })
+    ElMessage.success(wasFavorited ? '已取消收藏' : '已收藏')
+  }, () => {
+    // 失败回滚
+    if (wasFavorited) {
+      favoriteIds.value.push(courseId)
+    } else {
+      favoriteIds.value = favoriteIds.value.filter(id => id !== courseId)
+    }
+    ElMessage.error('操作失败')
+  })
 }
 
 const enrollCourse = (courseId) => {
+  console.log('[enrollCourse] enrolling courseId:', courseId, 'myCourses before:', myCourses.value.length)
   post('/api/course/enroll', { courseId }, () => {
+    console.log('[enrollCourse] success, optimistic update...')
     ElMessage.success('报名成功')
-    loadMyCourses()
-  }, () => { ElMessage.error('报名失败') })
+    // 乐观更新：直接加入本地 myCourses，不等重新请求
+    if (!myCourses.value.some(m => (m.courseId || m.id) === courseId)) {
+      myCourses.value.push({ courseId, id: courseId })
+    }
+  }, (err) => {
+    console.error('[enrollCourse] failed:', err)
+    ElMessage.error('报名失败')
+  })
 }
 
 const onSearchInput = () => {
@@ -80,6 +105,7 @@ onMounted(() => {
   loadMyCourses()
   loadFavoriteIds()
 })
+
 </script>
 
 <template>

@@ -367,7 +367,7 @@ onUnmounted(() => {
 }
 .bg {
   position: fixed; inset: 0; z-index: 0;
-  background-image: url('@/assets/images/2.jpeg');
+  background-image: url('@/assets/images/4.jpg');
   background-size: cover; background-position: center;
 }
 .bg-dim {

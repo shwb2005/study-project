@@ -64,6 +64,11 @@ const router = createRouter({
       name: 'announcements',
       component: () => import('@/view/AnnouncementPage.vue')
     },
+    {
+      path: '/study-plan',
+      name: 'study-plan',
+      component: () => import('@/view/StudyPlanPage.vue')
+    },
     // 添加管理员路由
     {
       path: '/admin',
@@ -114,7 +119,7 @@ router.beforeEach((to, from, next) => {
   const isWelcomePage = to.name && to.name.startsWith('welcome')
 
   // 检查是否访问需要认证的页面
-  const isProtectedPage = to.name === 'index' || to.name === 'courses' || to.name === 'profile' || to.name === 'course-detail' || to.name === 'announcements'
+  const isProtectedPage = to.name === 'index' || to.name === 'courses' || to.name === 'profile' || to.name === 'course-detail' || to.name === 'announcements' || to.name === 'study-plan'
 
   // 检查是否访问需要管理员权限的页面
   const isAdminPage = to.meta.requiresAdmin
