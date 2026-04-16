@@ -122,7 +122,7 @@ public class AdminCourseController {
                     try {
                         List<Chapter> chapters = objectMapper.readValue(chaptersJson,
                             new TypeReference<List<Chapter>>() {});
-                        chapterService.replaceChapters(course.getId(), chapters);
+                        chapterService.updateChaptersIncrementally(course.getId(), chapters);
                     } catch (Exception e) {
                         logger.warn("保存课程章节失败（不影响课程创建）: {}", e.getMessage());
                     }

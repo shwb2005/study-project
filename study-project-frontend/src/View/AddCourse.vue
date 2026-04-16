@@ -150,11 +150,29 @@
             <div v-for="(chapter, idx) in addForm.chapters" :key="idx" class="chapter-row">
               <div class="chapter-header">
                 <span class="chapter-num">第 {{ idx + 1 }} 章</span>
-                <button type="button" class="btn-remove-chapter" @click.stop="handleRemoveChapter('add', idx)" title="删除此章节">
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14">
-                    <path d="M3 5h10M5 5v8a1 1 0 001 1h4a1 1 0 001-1V5M5 5l1-1h4l1 1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
+                <div class="chapter-controls">
+                  <button type="button" class="btn-sort-up"
+                          :disabled="idx === 0"
+                          @click.stop="moveChapter('add', idx, 'up')"
+                          title="上移">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="12" height="12">
+                      <path d="M8 12V4M4 8l4-4 4 4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="btn-sort-down"
+                          :disabled="idx === addForm.chapters.length - 1"
+                          @click.stop="moveChapter('add', idx, 'down')"
+                          title="下移">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="12" height="12">
+                      <path d="M8 4v8M4 8l4 4 4-4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="btn-remove-chapter" @click.stop="handleRemoveChapter('add', idx)" title="删除此章节">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14">
+                      <path d="M3 5h10M5 5v8a1 1 0 001 1h4a1 1 0 001-1V5M5 5l1-1h4l1 1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
               <el-form-item :label="`章节 ${idx + 1} 标题`">
                 <el-input v-model="chapter.title" placeholder="输入章节标题" maxlength="200" />
@@ -217,11 +235,29 @@
             <div v-for="(chapter, idx) in editForm.chapters" :key="idx" class="chapter-row">
               <div class="chapter-header">
                 <span class="chapter-num">第 {{ idx + 1 }} 章</span>
-                <button type="button" class="btn-remove-chapter" @click.stop="handleRemoveChapter('edit', idx)" title="删除此章节">
-                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14">
-                    <path d="M3 5h10M5 5v8a1 1 0 001 1h4a1 1 0 001-1V5M5 5l1-1h4l1 1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
+                <div class="chapter-controls">
+                  <button type="button" class="btn-sort-up"
+                          :disabled="idx === 0"
+                          @click.stop="moveChapter('edit', idx, 'up')"
+                          title="上移">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="12" height="12">
+                      <path d="M8 12V4M4 8l4-4 4 4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="btn-sort-down"
+                          :disabled="idx === editForm.chapters.length - 1"
+                          @click.stop="moveChapter('edit', idx, 'down')"
+                          title="下移">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="12" height="12">
+                      <path d="M8 4v8M4 8l4 4 4-4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="btn-remove-chapter" @click.stop="handleRemoveChapter('edit', idx)" title="删除此章节">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14">
+                      <path d="M3 5h10M5 5v8a1 1 0 001 1h4a1 1 0 001-1V5M5 5l1-1h4l1 1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
               <el-form-item :label="`章节 ${idx + 1} 标题`">
                 <el-input v-model="chapter.title" placeholder="输入章节标题" maxlength="200" />
@@ -332,6 +368,21 @@ const handleRemoveChapter = (type, idx) => {
     form.chapters.splice(idx, 1)
   }
 }
+
+const moveChapter = (type, idx, direction) => {
+  const form = type === 'add' ? addForm : editForm
+  const chapters = form.chapters
+  const newIndex = direction === 'up' ? idx - 1 : idx + 1
+
+  // 边界检查（双重保险，虽然按钮已禁用）
+  if (newIndex < 0 || newIndex >= chapters.length) return
+
+  // 交换位置
+  const temp = chapters[idx]
+  chapters[idx] = chapters[newIndex]
+  chapters[newIndex] = temp
+}
+
 let searchTimer = null
 
 const onSearchInput = () => {
@@ -511,10 +562,11 @@ const handleEdit = (course) => {
   editForm.maxCheckInCount = course.maxCheckInCount
   editForm.coverImage = course.coverImage || ''
 
-  // 加载课程章节
+  // 加载课程章节（保留 ID，用于后端识别是更新还是新增）
   get('/api/admin/course/' + course.id + '/chapters',
     (data) => {
       editForm.chapters = (data || []).map(c => ({
+        id: c.id,  // 保留 ID
         title: c.title || '',
         videoUrl: c.videoUrl || ''
       }))
@@ -945,6 +997,30 @@ onUnmounted(() => {
 }
 .btn-remove-chapter:hover {
   background: rgba(255,59,48,0.15);
+}
+.chapter-controls {
+  display: flex;
+  gap: 6px;
+}
+.btn-sort-up, .btn-sort-down {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(0, 113, 227, 0.08);
+  color: #0071e3;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-sort-up:hover:not(:disabled), .btn-sort-down:hover:not(:disabled) {
+  background: rgba(0, 113, 227, 0.15);
+}
+.btn-sort-up:disabled, .btn-sort-down:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 .btn-add-chapter {
   display: flex;

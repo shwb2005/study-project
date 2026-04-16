@@ -34,4 +34,10 @@ public interface ChapterMapper {
 
     @Delete("DELETE FROM course_chapters WHERE id = #{id}")
     int deleteById(@Param("id") Integer id);
+
+    @Update("UPDATE course_chapters SET sort_order = #{sortOrder}, updated_at = NOW() WHERE id = #{id}")
+    void updateSortOrder(@Param("id") Integer id, @Param("sortOrder") Integer sortOrder);
+
+    @Update("UPDATE course_chapters SET title = #{title}, video_url = #{videoUrl}, updated_at = NOW() WHERE id = #{id}")
+    void updateChapterInfo(Chapter chapter);
 }

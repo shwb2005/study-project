@@ -9,7 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ChapterServiceImpl implements ChapterService {
@@ -43,6 +44,52 @@ public class ChapterServiceImpl implements ChapterService {
             return true;
         } catch (Exception e) {
             logger.error("替换课程章节失败", e);
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean updateChaptersIncrementally(Integer courseId, List<Chapter> newChapters) {
+        try {
+            // 获取数据库中现有章节
+            List<Chapter> existingChapters = chapterMapper.findByCourseId(courseId);
+            Map<Integer, Chapter> existingMap = existingChapters.stream()
+                .filter(c -> c.getId() != null)
+                .collect(Collectors.toMap(Chapter::getId, c -> c));
+
+            Set<Integer> processedIds = new HashSet<>();
+
+            for (int i = 0; i < newChapters.size(); i++) {
+                Chapter newChapter = newChapters.get(i);
+
+                if (newChapter.getId() != null && existingMap.containsKey(newChapter.getId())) {
+                    // 已存在章节：只更新 sort_order
+                    Chapter existing = existingMap.get(newChapter.getId());
+                    if (!existing.getSortOrder().equals(i)) {
+                        chapterMapper.updateSortOrder(newChapter.getId(), i);
+                    }
+                    // 同时更新标题和视频URL（如果有变化）
+                    chapterMapper.updateChapterInfo(newChapter);
+                    processedIds.add(newChapter.getId());
+                } else {
+                    // 新增章节
+                    newChapter.setCourseId(courseId);
+                    newChapter.setSortOrder(i);
+                    chapterMapper.insert(newChapter);
+                }
+            }
+
+            // 删除不在新列表中的章节
+            for (Chapter existing : existingChapters) {
+                if (!processedIds.contains(existing.getId())) {
+                    chapterMapper.deleteById(existing.getId());
+                }
+            }
+
+            return true;
+        } catch (Exception e) {
+            logger.error("增量更新课程章节失败", e);
             return false;
         }
     }

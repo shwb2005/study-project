@@ -16,6 +16,11 @@ public interface ChapterService {
     boolean replaceChapters(Integer courseId, List<Chapter> chapters);
 
     /**
+     * 增量更新课程章节（只更新变化的章节）
+     */
+    boolean updateChaptersIncrementally(Integer courseId, List<Chapter> chapters);
+
+    /**
      * 删除课程的所有章节
      */
     boolean deleteChaptersByCourseId(Integer courseId);
