@@ -4,8 +4,12 @@ import com.example.annotation.RequireModule;
 import com.example.entity.RestBean;
 import com.example.entity.Course;
 import com.example.entity.CourseDetail;
+import com.example.entity.Chapter;
 import com.example.service.CourseService;
 import com.example.service.CourseDetailService;
+import com.example.service.ChapterService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +31,11 @@ public class AdminCourseController {
 
     @Resource
     private CourseDetailService courseDetailService;
+
+    @Resource
+    private ChapterService chapterService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/course/list")
     public RestBean<Map<String, Object>> getAdminCourseList(
@@ -52,6 +61,19 @@ public class AdminCourseController {
         }
     }
 
+    @GetMapping("/course/{id}/chapters")
+    public RestBean<List<Chapter>> getCourseChapters(@PathVariable Integer id) {
+        try {
+            logger.info("管理员查询课程章节，课程ID: {}", id);
+            List<Chapter> chapters = chapterService.getChapters(id);
+            logger.info("查询到 {} 个章节", chapters.size());
+            return RestBean.success(chapters);
+        } catch (Exception e) {
+            logger.error("获取课程章节失败", e);
+            return RestBean.failure(500, List.of());
+        }
+    }
+
     @PostMapping("/course/add")
     public RestBean<String> addAdminCourse(@RequestParam String name,
                                            @RequestParam String description,
@@ -64,7 +86,8 @@ public class AdminCourseController {
                                            @RequestParam(required = false) String audience,
                                            @RequestParam(required = false) String materials,
                                            @RequestParam(required = false) String coverImage,
-                                           @RequestParam(required = false) String videoUrl) {
+                                           @RequestParam(required = false) String videoUrl,
+                                           @RequestParam(required = false) String chaptersJson) {
         try {
             Course course = new Course();
             course.setName(name);
@@ -93,6 +116,18 @@ public class AdminCourseController {
                 } catch (Exception e) {
                     logger.warn("保存课程详情失败（不影响课程创建）: {}", e.getMessage());
                 }
+
+                // 保存章节
+                if (chaptersJson != null && !chaptersJson.isEmpty()) {
+                    try {
+                        List<Chapter> chapters = objectMapper.readValue(chaptersJson,
+                            new TypeReference<List<Chapter>>() {});
+                        chapterService.replaceChapters(course.getId(), chapters);
+                    } catch (Exception e) {
+                        logger.warn("保存课程章节失败（不影响课程创建）: {}", e.getMessage());
+                    }
+                }
+
                 return RestBean.success("课程添加成功");
             } else {
                 logger.error("课程添加失败: {}", name);
@@ -133,7 +168,8 @@ public class AdminCourseController {
                                               @RequestParam(required = false) String audience,
                                               @RequestParam(required = false) String materials,
                                               @RequestParam(required = false) String coverImage,
-                                              @RequestParam(required = false) String videoUrl) {
+                                              @RequestParam(required = false) String videoUrl,
+                                              @RequestParam(required = false) String chaptersJson) {
         try {
             Course course = new Course();
             course.setId(id);
@@ -147,8 +183,8 @@ public class AdminCourseController {
             course.setVideoUrl(videoUrl);
 
             boolean success = courseService.updateCourse(course);
+
             if (success) {
-                // 保存课程详情
                 try {
                     CourseDetail detail = new CourseDetail();
                     detail.setCourseId(id);
@@ -159,14 +195,24 @@ public class AdminCourseController {
                     detail.setMaterials(materials);
                     courseDetailService.saveCourseDetail(detail);
                 } catch (Exception e) {
-                    logger.warn("保存课程详情失败（不影响课程更新）: {}", e.getMessage());
+                    // 静默处理，不影响课程更新
                 }
+
+                if (chaptersJson != null && !chaptersJson.isEmpty()) {
+                    try {
+                        List<Chapter> chapters = objectMapper.readValue(chaptersJson,
+                            new TypeReference<List<Chapter>>() {});
+                        chapterService.replaceChapters(id, chapters);
+                    } catch (Exception e) {
+                        // 静默处理
+                    }
+                }
+
                 return RestBean.success("课程更新成功");
             } else {
                 return RestBean.failure(500, "课程更新失败");
             }
         } catch (Exception e) {
-            logger.error("更新课程失败", e);
             return RestBean.failure(500, "更新课程失败: " + e.getMessage());
         }
     }

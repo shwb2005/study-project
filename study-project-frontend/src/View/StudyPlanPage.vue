@@ -338,14 +338,7 @@ const submitItem = () => {
       // 每周重复：使用新的批量添加接口
       const weekdaysParam = f.selectedWeekdays.map(d => `weekdays=${d}`).join('&')
       const url = `/api/study-plan/item/add-batch?planId=${f.planId}${courseIdParam}${customTopicParam}${startTimeParam}${endTimeParam}${notesParam}&${weekdaysParam}`
-      console.log('=== 批量添加任务 ===')
-      console.log('请求URL:', url)
-      console.log('表单数据:', f)
-      console.log('星期参数:', weekdaysParam)
       post(url, {}, (data) => {
-        console.log('响应数据:', data)
-        console.log('响应类型:', typeof data)
-        console.log('createdCount:', data?.createdCount)
         if (data && data.createdCount === 0) {
           ElMessage.warning('所选日期范围内没有符合条件的星期，请调整计划周期或选择其他星期')
         } else if (data && data.createdCount > 0) {
@@ -354,13 +347,12 @@ const submitItem = () => {
           loadPlans()
           loadCalendarItems()
         } else {
-          console.error('响应数据格式异常:', data)
           ElMessage.error('服务器返回数据格式异常')
         }
       }, (message) => {
-        console.error('批量添加业务失败:', message)
-      }, (error) => {
-        console.error('批量添加请求失败:', error)
+        ElMessage.error(message || '添加失败')
+      }, () => {
+        ElMessage.error('网络错误')
       })
     }
   }
@@ -545,6 +537,11 @@ onUnmounted(() => {
                     <span class="today-name">{{ itemName(item) }}</span>
                   </div>
                   <div class="item-ops" @click.stop>
+                    <button v-if="item.courseId" class="learn-btn-sm" @click="router.push('/course/' + item.courseId)" title="去学习">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
                     <button class="icon-btn sm" @click="openEditItem(item)">
                       <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5l3 3L4 13H1v-3L9.5 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
@@ -617,6 +614,11 @@ onUnmounted(() => {
                     <span class="item-name">{{ item.courseName || item.customTopic || '学习任务' }}</span>
                   </div>
                   <div class="item-ops" @click.stop>
+                    <button v-if="item.courseId" class="learn-btn-sm" @click="router.push('/course/' + item.courseId)" title="去学习">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
                     <button class="icon-btn sm" @click="openEditItem(item)">
                       <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5l3 3L4 13H1v-3L9.5 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
@@ -762,6 +764,11 @@ onUnmounted(() => {
           </div>
         </div>
         <div class="item-ops" @click.stop>
+          <button v-if="item.courseId" class="learn-btn-sm" @click="router.push('/course/' + item.courseId)" title="去学习">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
           <button class="icon-btn sm" @click="openEditItem(item)">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M9.5 1.5l3 3L4 13H1v-3L9.5 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
@@ -1139,6 +1146,19 @@ onUnmounted(() => {
 .icon-btn:hover { background: rgba(0,0,0,0.06); color: #1d1d1f; }
 .icon-btn.danger:hover { color: #ff3b30; background: rgba(255,59,48,0.08); }
 .icon-btn.sm { width: 30px; height: 30px; }
+
+/* 去学习按钮 */
+.learn-btn-sm {
+  width: 30px; height: 30px; border-radius: 10px;
+  border: none; background: rgba(29,29,31,0.72); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: all 0.15s;
+  backdrop-filter: blur(12px);
+}
+.learn-btn-sm:hover {
+  background: rgba(0,0,0,0.82);
+  transform: scale(1.05);
+}
 
 .expand-icon {
   margin-left: 4px; color: #86868b;

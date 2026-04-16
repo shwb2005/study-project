@@ -1,7 +1,9 @@
 package com.example.contorller;
 
+import com.example.annotation.RequireModule;
 import com.example.entity.RestBean;
 import com.example.entity.Course;
+import com.example.entity.Chapter;
 import com.example.entity.CommunityReply;
 import com.example.entity.CommunityReview;
 import com.example.entity.CommunityReviewLike;
@@ -64,6 +66,9 @@ public class CourseController {
     @Resource
     private CourseDetailService courseDetailService;
 
+    @Resource
+    private com.example.service.ChapterService chapterService;
+
     @GetMapping("/list")
     public RestBean<Map<String, Object>> getAllCourses(
             @RequestParam(defaultValue = "1") int page,
@@ -101,6 +106,17 @@ public class CourseController {
             return RestBean.success(detail);
         } catch (Exception e) {
             return RestBean.success(null);
+        }
+    }
+
+    @GetMapping("/{id}/chapters")
+    public RestBean<List<Chapter>> getCourseChapters(@PathVariable Integer id) {
+        try {
+            List<Chapter> chapters = chapterService.getChapters(id);
+            return RestBean.success(chapters);
+        } catch (Exception e) {
+            logger.error("获取课程章节失败", e);
+            return RestBean.failure(500, List.of());
         }
     }
 

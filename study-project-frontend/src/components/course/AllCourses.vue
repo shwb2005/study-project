@@ -67,16 +67,13 @@ const toggleFavorite = (courseId) => {
 }
 
 const enrollCourse = (courseId) => {
-  console.log('[enrollCourse] enrolling courseId:', courseId, 'myCourses before:', myCourses.value.length)
   post('/api/course/enroll', { courseId }, () => {
-    console.log('[enrollCourse] success, optimistic update...')
     ElMessage.success('报名成功')
     // 乐观更新：直接加入本地 myCourses，不等重新请求
     if (!myCourses.value.some(m => (m.courseId || m.id) === courseId)) {
       myCourses.value.push({ courseId, id: courseId })
     }
-  }, (err) => {
-    console.error('[enrollCourse] failed:', err)
+  }, () => {
     ElMessage.error('报名失败')
   })
 }

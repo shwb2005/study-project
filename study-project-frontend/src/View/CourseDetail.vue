@@ -1,5 +1,5 @@
 <script setup>
-import {ref, onMounted, onUnmounted} from 'vue'
+import {ref, computed, onMounted, onUnmounted} from 'vue'
 import {useRouter, useRoute} from 'vue-router'
 import {get} from '@/net'
 
@@ -8,7 +8,8 @@ const route = useRoute()
 const courseId = route.params.id
 
 const course = ref(null)
-const detail = ref(null)
+const chapters = ref([])
+const activeChapterIdx = ref(0)
 const loading = ref(true)
 
 const bgRef = ref(null)
@@ -30,17 +31,26 @@ const loadCourse = () => {
   })
 }
 
-const loadDetail = () => {
-  get('/api/course/' + courseId + '/detail', data => {
-    detail.value = data
+const loadChapters = () => {
+  get('/api/course/' + courseId + '/chapters', data => {
+    chapters.value = data || []
+    // 默认选中第一个有视频的章节
+    if (chapters.value.length > 0) {
+      const firstWithVideo = chapters.value.findIndex(c => c.videoUrl)
+      activeChapterIdx.value = firstWithVideo >= 0 ? firstWithVideo : 0
+    }
   }, () => {
-    detail.value = null
+    chapters.value = []
   })
+}
+
+const selectChapter = (idx) => {
+  activeChapterIdx.value = idx
 }
 
 onMounted(() => {
   loadCourse()
-  loadDetail()
+  loadChapters()
   loading.value = false
   window.addEventListener('scroll', handleScroll, {passive: true})
 })
@@ -51,16 +61,24 @@ onUnmounted(() => {
 
 const isEmbedUrl = (url) => {
   if (!url) return false
-  return url.includes('youtube.com/embed') || url.includes('player.bilibili.com') || url.includes('iframe')
+  return url.includes('youtube.com/embed') ||
+         url.includes('player.bilibili.com') ||
+         url.includes('iframe') ||
+         /www\.bilibili\.com\/video\//.test(url)
 }
 
-const sections = [
-  {key: 'objectives', title: '课程目标', icon: 'M9 5l7 7-7 7'},
-  {key: 'outline', title: '课程大纲', icon: 'M4 6h16M4 12h16M4 18h10'},
-  {key: 'requirements', title: '先修要求', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01z'},
-  {key: 'audience', title: '适合人群', icon: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75'},
-  {key: 'materials', title: '参考资料', icon: 'M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 016.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z'}
-]
+const getEmbedUrl = (url) => {
+  if (!url) return url
+  const bilibiliMatch = url.match(/www\.bilibili\.com\/video\/(BV[a-zA-Z0-9]+)/)
+  if (bilibiliMatch) {
+    return 'https://player.bilibili.com/player.html?bvid=' + bilibiliMatch[1] + '&autoplay=0'
+  }
+  return url
+}
+
+const activeChapter = computed(() => {
+  return chapters.value[activeChapterIdx.value] || null
+})
 </script>
 
 <template>
@@ -80,8 +98,6 @@ const sections = [
     </header>
 
     <main class="main" v-if="course">
-
-
       <!-- 课程基本信息 -->
       <section class="glass-card hero-card">
         <div class="hero-top">
@@ -117,52 +133,50 @@ const sections = [
           </div>
           <div class="stat-sep"></div>
           <div class="stat-item">
-            <span class="stat-n">{{ course.maxCheckInCount || 12 }}</span>
-            <span class="stat-l">签到次数</span>
+            <span class="stat-n">{{ chapters.length }}</span>
+            <span class="stat-l">章节数</span>
           </div>
         </div>
       </section>
 
-      <!-- 视频 -->
-      <div v-if="course.videoUrl" class="video-card">
+      <!-- 当前选中章节的视频 -->
+      <div v-if="activeChapter && activeChapter.videoUrl" class="video-card">
         <div class="video-header">
           <div class="video-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
               <polygon points="5 3 19 12 5 21 5 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            课程视频
+            {{ activeChapter.title }}
           </div>
         </div>
         <div class="video-wrap">
-          <iframe v-if="isEmbedUrl(course.videoUrl)" :src="course.videoUrl" class="video-iframe"
+          <iframe v-if="isEmbedUrl(activeChapter.videoUrl)" :src="getEmbedUrl(activeChapter.videoUrl)" class="video-iframe"
                   frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-          <video v-else :src="course.videoUrl" class="video-player" controls></video>
+          <video v-else :src="activeChapter.videoUrl" class="video-player" controls></video>
         </div>
       </div>
 
-      <!-- 课程详情板块 -->
-      <template v-if="detail">
-        <section v-for="sec in sections" :key="sec.key" class="glass-card detail-section" v-show="detail[sec.key]">
-          <div class="section-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
-              <path :d="sec.icon" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <h2 class="section-title">{{ sec.title }}</h2>
+      <!-- 章节列表 -->
+      <section class="glass-card chapters-card">
+        <div class="chapters-header">
+          <h2 class="chapters-title">课程章节</h2>
+          <span class="chapters-count">{{ chapters.length }} 节</span>
+        </div>
+        <div v-if="chapters.length === 0" class="chapters-empty">
+          <p>暂无章节内容</p>
+        </div>
+        <div class="chapter-list" v-else>
+          <div
+            v-for="(chapter, idx) in chapters"
+            :key="chapter.id"
+            class="chapter-item"
+            :class="{ active: idx === activeChapterIdx }"
+            @click="selectChapter(idx)"
+          >
+            <span class="chapter-num">{{ idx + 1 }}</span>
+            <span class="chapter-title">{{ chapter.title }}</span>
+            <span v-if="chapter.videoUrl" class="chapter-tag">含视频</span>
           </div>
-          <div class="section-body">
-            <p v-for="(line, i) in detail[sec.key].split('\n')" :key="i">{{ line }}</p>
-          </div>
-        </section>
-      </template>
-
-      <!-- 无详情 -->
-      <section v-if="!detail || sections.every(s => !detail[s.key])" class="glass-card empty-section">
-        <div class="empty-inner">
-          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" width="36" height="36">
-            <path d="M6 10h36v28H6z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 18h36M16 10v28M6 26h10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <p class="empty-text">暂无详细内容</p>
         </div>
       </section>
     </main>
@@ -235,15 +249,15 @@ const sections = [
 
 .main {
   position: relative; z-index: 2;
-  max-width: 720px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 28px 18px 72px;
-  display: flex; flex-direction: column; gap: 14px;
+  padding: 32px 32px 80px;
+  display: flex; flex-direction: column; gap: 20px;
 }
 
 .glass-card {
-  border-radius: 20px;
-  padding: 22px;
+  border-radius: 22px;
+  padding: 32px;
   background: rgba(255,255,255,0.62);
   backdrop-filter: saturate(200%) blur(40px);
   -webkit-backdrop-filter: saturate(200%) blur(40px);
@@ -251,43 +265,41 @@ const sections = [
   box-shadow: 0 2px 32px rgba(0,0,0,0.08), 0 0.5px 0 rgba(255,255,255,0.95) inset;
 }
 
-/* Cover image + title side by side */
 .hero-top {
   display: flex;
   align-items: flex-start;
-  gap: 18px;
-  margin-bottom: 14px;
+  gap: 20px;
+  margin-bottom: 16px;
 }
 .hero-top .course-title {
   flex: 1;
 }
 .card-cover {
-  width: 80px; height: 80px;
-  border-radius: 16px;
+  width: 100px; height: 100px;
+  border-radius: 18px;
   object-fit: cover;
   flex-shrink: 0;
   order: 2;
 }
 
-/* Video */
 .video-card {
   background: rgba(255,255,255,0.62);
   backdrop-filter: saturate(200%) blur(40px);
   -webkit-backdrop-filter: saturate(200%) blur(40px);
-  border-radius: 20px;
+  border-radius: 22px;
   border: 0.5px solid rgba(255,255,255,0.85);
   box-shadow: 0 2px 32px rgba(0,0,0,0.08), 0 0.5px 0 rgba(255,255,255,0.95) inset;
   overflow: hidden;
 }
 .video-header {
-  padding: 18px 22px 14px;
+  padding: 22px 28px 18px;
   border-bottom: 0.5px solid rgba(0,0,0,0.07);
 }
 .video-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 15px;
+  gap: 10px;
+  font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
 }
@@ -299,51 +311,95 @@ const sections = [
   border: none;
 }
 
-/* Hero card */
-.hero-card { padding: 28px 24px; }
+.hero-card { padding: 36px 32px; }
 .course-title {
-  font-size: 26px; font-weight: 700;
+  font-size: 30px; font-weight: 700;
   letter-spacing: -0.03em; color: #1d1d1f;
-  margin-bottom: 12px; line-height: 1.3;
+  margin-bottom: 14px; line-height: 1.3;
 }
 .course-desc {
-  font-size: 15px; color: #6e6e73;
-  line-height: 1.65; margin-bottom: 18px;
+  font-size: 16px; color: #6e6e73;
+  line-height: 1.65; margin-bottom: 22px;
 }
-.meta-row { display: flex; gap: 20px; margin-bottom: 18px; }
+.meta-row { display: flex; gap: 24px; margin-bottom: 22px; }
 .meta-item {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 13px; color: #86868b; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; color: #86868b; font-weight: 500;
 }
 .stats-inset {
   display: flex; align-items: center;
-  border-radius: 12px; padding: 14px 0;
+  border-radius: 14px; padding: 18px 0;
   background: rgba(0,0,0,0.04);
   box-shadow: 0 2px 4px rgba(0,0,0,0.07) inset, 0 1px 0 rgba(255,255,255,0.88);
   border: 0.5px solid rgba(0,0,0,0.06);
 }
-.stat-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.stat-n { font-size: 22px; font-weight: 700; letter-spacing: -0.04em; color: #1d1d1f; line-height: 1; }
-.stat-l { font-size: 11px; color: #86868b; }
-.stat-sep { width: 0.5px; height: 30px; background: rgba(0,0,0,0.08); }
+.stat-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stat-n { font-size: 26px; font-weight: 700; letter-spacing: -0.04em; color: #1d1d1f; line-height: 1; }
+.stat-l { font-size: 12px; color: #86868b; }
+.stat-sep { width: 0.5px; height: 36px; background: rgba(0,0,0,0.08); }
 
-/* Detail sections */
-.detail-section { padding: 22px 24px; }
-.section-header {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 16px; color: #1d1d1f;
+.chapters-card { padding: 32px; }
+.chapters-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px;
 }
-.section-title {
-  font-size: 17px; font-weight: 700;
-  letter-spacing: -0.02em;
+.chapters-title {
+  font-size: 19px; font-weight: 700;
+  letter-spacing: -0.02em; color: #1d1d1f;
 }
-.section-body {
-  font-size: 14px; color: #3a3a3c;
-  line-height: 1.8; white-space: pre-line;
+.chapters-count {
+  font-size: 14px; color: #86868b;
 }
-.section-body p { margin-bottom: 4px; }
+.chapters-empty {
+  text-align: center; padding: 40px; color: #86868b; font-size: 15px;
+}
+.chapter-list {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.chapter-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 13px;
+  border: 1px solid rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chapter-item:hover {
+  background: rgba(255,255,255,0.8);
+  border-color: rgba(0,0,0,0.1);
+}
+.chapter-item.active {
+  background: rgba(0,113,227,0.08);
+  border-color: rgba(0,113,227,0.3);
+}
+.chapter-num {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.06);
+  border-radius: 9px;
+  font-size: 14px; font-weight: 600;
+  color: #6e6e73;
+  flex-shrink: 0;
+}
+.chapter-item.active .chapter-num {
+  background: rgba(0,113,227,0.15);
+  color: #0071e3;
+}
+.chapter-title {
+  flex: 1;
+  font-size: 16px; font-weight: 500;
+  color: #1d1d1f;
+}
+.chapter-tag {
+  padding: 4px 10px;
+  background: rgba(52,199,89,0.12);
+  color: #34c759;
+  font-size: 11px; font-weight: 600;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
 
-/* Empty / Loading */
 .empty-section { padding: 40px; }
 .empty-inner {
   display: flex; flex-direction: column; align-items: center; gap: 12px; color: #c7c7cc;
@@ -371,10 +427,13 @@ const sections = [
 .back-btn:hover { background: rgba(0,0,0,0.95); }
 
 @media (max-width: 768px) {
-  .main { padding: 16px 14px 52px; }
+  .main { padding: 20px 16px 60px; max-width: 100%; }
   .navbar { padding: 0 16px; }
-  .hero-card { padding: 20px 18px; }
-  .course-title { font-size: 22px; }
-  .meta-row { flex-wrap: wrap; gap: 12px; }
+  .glass-card { padding: 24px; }
+  .hero-card { padding: 24px; }
+  .course-title { font-size: 24px; }
+  .meta-row { flex-wrap: wrap; gap: 14px; }
+  .card-cover { width: 80px; height: 80px; }
+  .chapters-card { padding: 24px; }
 }
 </style>

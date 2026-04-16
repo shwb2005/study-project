@@ -107,47 +107,47 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const store = useStore()
 
-  // 检查用户是否已登录
   const isLoggedIn = store.auth.user != null
-  // 检查管理员是否已登录
   const isAdminLoggedIn = store.auth.admin != null
-
-  // 检查是否访问欢迎页（登录页）
   const isWelcomePage = to.name && to.name.startsWith('welcome')
-
-  // 检查是否访问需要认证的页面
   const isProtectedPage = to.name === 'index' || to.name === 'courses' || to.name === 'profile' || to.name === 'course-detail' || to.name === 'announcements' || to.name === 'study-plan'
-
-  // 检查是否访问需要管理员权限的页面
   const isAdminPage = to.meta.requiresAdmin
 
+  // 管理员页面
+  if (isAdminPage) {
+    if (!isAdminLoggedIn) {
+      next('/admin-login')
+    } else {
+      const adminRole = store.auth.admin?.role
+      const allowedRoutes = roleAllowedRoutes[adminRole] || []
+      if (to.name !== 'admin' && !allowedRoutes.includes(to.name)) {
+        ElMessage.warning('权限不足')
+        next('/admin')
+        return
+      }
+      next()
+    }
+    return
+  }
+
+  // 用户页面：等待初始化完成再检查登录状态
+  if (!store.initialized && isProtectedPage) {
+    next()
+    return
+  }
+
   if ((isLoggedIn || isAdminLoggedIn) && isWelcomePage) {
-    // 已登录但访问登录页，根据用户类型跳转到对应页面
     if (isLoggedIn) {
       next('/index')
     } else {
       next('/admin')
     }
-  } else if (!isLoggedIn && isProtectedPage) {
-    // 未登录但访问需要认证的页面，跳转到登录页
+  } else if (!isLoggedIn && !isAdminLoggedIn && isProtectedPage && store.initialized) {
     next('/')
-  } else if (isAdminPage && !isAdminLoggedIn) {
-    // 访问管理员页面但未登录，跳转到管理员登录页
-    next('/admin-login')
-  } else if (isAdminPage && isAdminLoggedIn) {
-    const adminRole = store.auth.admin?.role
-    const allowedRoutes = roleAllowedRoutes[adminRole] || []
-    if (to.name !== 'admin' && !allowedRoutes.includes(to.name)) {
-      ElMessage.warning('权限不足')
-      next('/admin')
-      return
-    }
-    next()
   } else {
-    // 其他情况正常放行
     next()
   }
 })

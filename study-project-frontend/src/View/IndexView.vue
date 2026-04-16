@@ -174,6 +174,8 @@ const logout = () => {
   get('/api/auth/logout', (message) => {
     ElMessage.success(message)
     store.auth.user = null
+    store.auth.admin = null
+    localStorage.removeItem('admin_auth')
     router.push('/')
   })
 }

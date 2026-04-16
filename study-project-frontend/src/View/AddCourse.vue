@@ -120,7 +120,7 @@
 
       <!-- 添加课程弹窗 -->
       <el-dialog v-model="showAddDialog" title="添加课程" width="500px"
-                 :before-close="handleCloseDialog" class="glass-dialog">
+                 :before-close="(done) => { handleCloseDialog(); done() }" class="glass-dialog">
         <el-form :model="addForm" :rules="formRules" ref="addFormRef" label-width="90px">
           <el-form-item label="课程名称" prop="name">
             <el-input v-model="addForm.name" placeholder="请输入课程名称" maxlength="50" />
@@ -140,27 +140,36 @@
           <el-form-item label="封面图URL">
             <el-input v-model="addForm.coverImage" placeholder="输入封面图片链接" maxlength="500" />
           </el-form-item>
-          <el-form-item label="视频URL">
-            <el-input v-model="addForm.videoUrl" placeholder="输入视频链接（支持B站/YouTube嵌入链接）" maxlength="500" />
-          </el-form-item>
           <div class="detail-divider">
-            <span class="detail-divider-text">课程详情</span>
+            <span class="detail-divider-text">课程章节</span>
           </div>
-          <el-form-item label="课程目标">
-            <el-input v-model="addForm.objectives" type="textarea" :rows="3" placeholder="描述课程的学习目标" maxlength="1000" show-word-limit />
-          </el-form-item>
-          <el-form-item label="课程大纲">
-            <el-input v-model="addForm.outline" type="textarea" :rows="3" placeholder="列出课程的主要章节内容" maxlength="2000" show-word-limit />
-          </el-form-item>
-          <el-form-item label="先修要求">
-            <el-input v-model="addForm.requirements" type="textarea" :rows="2" placeholder="学习本课程需要的基础知识" maxlength="500" show-word-limit />
-          </el-form-item>
-          <el-form-item label="适合人群">
-            <el-input v-model="addForm.audience" type="textarea" :rows="2" placeholder="描述适合学习本课程的人群" maxlength="500" show-word-limit />
-          </el-form-item>
-          <el-form-item label="参考资料">
-            <el-input v-model="addForm.materials" type="textarea" :rows="2" placeholder="推荐的参考书籍或资源" maxlength="1000" show-word-limit />
-          </el-form-item>
+          <div class="chapters-section">
+            <div v-if="addForm.chapters.length === 0" class="chapters-empty">
+              <p>暂无章节，请点击下方按钮添加</p>
+            </div>
+            <div v-for="(chapter, idx) in addForm.chapters" :key="idx" class="chapter-row">
+              <div class="chapter-header">
+                <span class="chapter-num">第 {{ idx + 1 }} 章</span>
+                <button type="button" class="btn-remove-chapter" @click.stop="handleRemoveChapter('add', idx)" title="删除此章节">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14">
+                    <path d="M3 5h10M5 5v8a1 1 0 001 1h4a1 1 0 001-1V5M5 5l1-1h4l1 1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+              <el-form-item :label="`章节 ${idx + 1} 标题`">
+                <el-input v-model="chapter.title" placeholder="输入章节标题" maxlength="200" />
+              </el-form-item>
+              <el-form-item :label="`章节 ${idx + 1} 视频`">
+                <el-input v-model="chapter.videoUrl" placeholder="输入视频链接（支持B站/YouTube嵌入链接）" maxlength="500" />
+              </el-form-item>
+            </div>
+            <button type="button" class="btn-add-chapter" @click.stop="addChapter('add')">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14">
+                <path d="M8 3v10M3 8h10" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              添加章节
+            </button>
+          </div>
         </el-form>
         <template #footer>
           <div class="dlg-footer">
@@ -175,7 +184,7 @@
 
       <!-- 编辑课程弹窗 -->
       <el-dialog v-model="showEditDialog" title="编辑课程" width="500px"
-                 :before-close="handleCloseEditDialog" class="glass-dialog">
+                 :before-close="(done) => { handleCloseEditDialog(); done() }" class="glass-dialog">
         <el-form :model="editForm" :rules="formRules" ref="editFormRef" label-width="90px">
           <el-form-item label="课程名称" prop="name">
             <el-input v-model="editForm.name" placeholder="请输入课程名称" maxlength="50" />
@@ -198,27 +207,36 @@
           <el-form-item label="封面图URL">
             <el-input v-model="editForm.coverImage" placeholder="输入封面图片链接" maxlength="500" />
           </el-form-item>
-          <el-form-item label="视频URL">
-            <el-input v-model="editForm.videoUrl" placeholder="输入视频链接（支持B站/YouTube嵌入链接）" maxlength="500" />
-          </el-form-item>
           <div class="detail-divider">
-            <span class="detail-divider-text">课程详情</span>
+            <span class="detail-divider-text">课程章节</span>
           </div>
-          <el-form-item label="课程目标">
-            <el-input v-model="editForm.objectives" type="textarea" :rows="3" placeholder="描述课程的学习目标" maxlength="1000" show-word-limit />
-          </el-form-item>
-          <el-form-item label="课程大纲">
-            <el-input v-model="editForm.outline" type="textarea" :rows="3" placeholder="列出课程的主要章节内容" maxlength="2000" show-word-limit />
-          </el-form-item>
-          <el-form-item label="先修要求">
-            <el-input v-model="editForm.requirements" type="textarea" :rows="2" placeholder="学习本课程需要的基础知识" maxlength="500" show-word-limit />
-          </el-form-item>
-          <el-form-item label="适合人群">
-            <el-input v-model="editForm.audience" type="textarea" :rows="2" placeholder="描述适合学习本课程的人群" maxlength="500" show-word-limit />
-          </el-form-item>
-          <el-form-item label="参考资料">
-            <el-input v-model="editForm.materials" type="textarea" :rows="2" placeholder="推荐的参考书籍或资源" maxlength="1000" show-word-limit />
-          </el-form-item>
+          <div class="chapters-section">
+            <div v-if="editForm.chapters.length === 0" class="chapters-empty">
+              <p>暂无章节，请点击下方按钮添加</p>
+            </div>
+            <div v-for="(chapter, idx) in editForm.chapters" :key="idx" class="chapter-row">
+              <div class="chapter-header">
+                <span class="chapter-num">第 {{ idx + 1 }} 章</span>
+                <button type="button" class="btn-remove-chapter" @click.stop="handleRemoveChapter('edit', idx)" title="删除此章节">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14">
+                    <path d="M3 5h10M5 5v8a1 1 0 001 1h4a1 1 0 001-1V5M5 5l1-1h4l1 1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+              <el-form-item :label="`章节 ${idx + 1} 标题`">
+                <el-input v-model="chapter.title" placeholder="输入章节标题" maxlength="200" />
+              </el-form-item>
+              <el-form-item :label="`章节 ${idx + 1} 视频`">
+                <el-input v-model="chapter.videoUrl" placeholder="输入视频链接（支持B站/YouTube嵌入链接）" maxlength="500" />
+              </el-form-item>
+            </div>
+            <button type="button" class="btn-add-chapter" @click.stop="addChapter('edit')">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" width="14" height="14">
+                <path d="M8 3v10M3 8h10" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              添加章节
+            </button>
+          </div>
         </el-form>
         <template #footer>
           <div class="dlg-footer">
@@ -234,6 +252,8 @@
 
     <!-- 删除确认弹窗 -->
     <ConfirmDeleteModal v-model="showDeleteModal" :message="deleteMessage" @confirm="confirmDelete" />
+    <!-- 章节删除确认弹窗 -->
+    <ConfirmDeleteModal v-model="showChapterDeleteModal" :message="chapterDeleteMessage" @confirm="confirmChapterDelete" />
   </div>
 </template>
 
@@ -241,12 +261,11 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { useStore } from '@/stores/index.js'
 import { get, post } from '@/net/index.js'
+import { useStore } from '@/stores/index.js'
 import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
 
 const router = useRouter()
-const store = useStore()
 
 // 状态管理
 const scrollBlur = ref(0)
@@ -271,6 +290,12 @@ const search = ref('')
 const showDeleteModal = ref(false)
 const deleteMessage = ref('')
 const deleteTarget = ref(null)
+
+// 章节删除确认
+const showChapterDeleteModal = ref(false)
+const chapterDeleteMessage = ref('')
+const chapterDeleteContext = ref(null) // { type: 'add'|'edit', idx: number }
+
 const confirmDelete = () => {
   if (deleteTarget.value) {
     post('/api/admin/course/delete', {courseId: deleteTarget.value.id},
@@ -283,6 +308,28 @@ const confirmDelete = () => {
         }
     )
     deleteTarget.value = null
+  }
+}
+
+const confirmChapterDelete = () => {
+  if (chapterDeleteContext.value) {
+    const { type, idx } = chapterDeleteContext.value
+    const form = type === 'add' ? addForm : editForm
+    form.chapters.splice(idx, 1)
+    chapterDeleteContext.value = null
+  }
+  showChapterDeleteModal.value = false
+}
+
+const handleRemoveChapter = (type, idx) => {
+  const form = type === 'add' ? addForm : editForm
+  const chapter = form.chapters[idx]
+  if (chapter.title || chapter.videoUrl) {
+    chapterDeleteContext.value = { type, idx }
+    chapterDeleteMessage.value = `确定要删除第 ${idx + 1} 章"${chapter.title || '未命名'}"吗？`
+    showChapterDeleteModal.value = true
+  } else {
+    form.chapters.splice(idx, 1)
   }
 }
 let searchTimer = null
@@ -317,15 +364,10 @@ const addForm = reactive({
   description: '',
   duration: '',
   maxCheckInCount: 12,
-  objectives: '',
-  outline: '',
-  requirements: '',
-  audience: '',
-  materials: '',
+  chapters: [],
   coverImage: '',
-  videoUrl: ''
-})
 
+  })
 const editForm = reactive({
   id: null,
   name: '',
@@ -334,14 +376,15 @@ const editForm = reactive({
   duration: '',
   studentsCount: 0,
   maxCheckInCount: 12,
-  objectives: '',
-  outline: '',
-  requirements: '',
-  audience: '',
-  materials: '',
+  chapters: [],
   coverImage: '',
-  videoUrl: ''
 })
+
+// 章节管理函数
+const addChapter = (type) => {
+  const form = type === 'add' ? addForm : editForm
+  form.chapters.push({ title: '', videoUrl: '' })
+}
 
 // 表单验证规则
 const formRules = {
@@ -367,21 +410,7 @@ const formRules = {
 
 // 返回首页
 const goToHome = () => {
-  console.log('🏠 返回首页')
   router.push('/admin')
-}
-
-// 检查管理员登录状态
-const checkAdminLogin = () => {
-  return new Promise((resolve) => {
-    if (store.auth.admin) {
-      console.log('Store 中已有管理员登录状态')
-      resolve(true)
-    } else {
-      console.log('Store 中无管理员登录状态')
-      resolve(false)
-    }
-  })
 }
 
 // 加载课程列表
@@ -421,56 +450,20 @@ const loadCourseList = () => {
 const handleAddCourse = () => {
   if (!addFormRef.value) return
 
-  console.log('📝 开始验证添加课程表单...')
-
   addFormRef.value.validate((valid) => {
     if (valid) {
-      console.log('✅ 表单验证通过，准备提交数据')
-
-      // 打印完整的表单数据
-      console.log('📦 提交的表单数据:', {
-        name: addForm.name,
-        teacherName: addForm.teacherName,
-        description: addForm.description,
-        duration: addForm.duration,
-        maxCheckInCount: addForm.maxCheckInCount
-      })
-
       adding.value = true
 
-      // 检查 API 地址
-      const apiUrl = '/api/admin/course/add'
-      console.log('🔗 请求地址:', apiUrl)
-
-      console.log('🔄 开始发送添加课程请求...')
-
-      post(apiUrl, {
+      post('/api/admin/course/add', {
             name: addForm.name,
             teacherName: addForm.teacherName,
             description: addForm.description,
             duration: addForm.duration,
             maxCheckInCount: addForm.maxCheckInCount,
-            objectives: addForm.objectives,
-            outline: addForm.outline,
-            requirements: addForm.requirements,
-            audience: addForm.audience,
-            materials: addForm.materials,
             coverImage: addForm.coverImage,
-            videoUrl: addForm.videoUrl
+            chaptersJson: JSON.stringify(addForm.chapters)
           },
-          // 成功回调
           (message) => {
-            console.log('✅ 添加课程请求成功，服务器响应:', message)
-
-            // 检查响应数据结构
-            console.log('📨 响应数据结构:', {
-              type: typeof message,
-              isArray: Array.isArray(message),
-              hasData: message && message.data !== undefined,
-              hasSuccess: message && message.success !== undefined,
-              fullResponse: message
-            })
-
             if (typeof message === 'string') {
               ElMessage.success(message)
             } else if (message && message.message) {
@@ -485,25 +478,7 @@ const handleAddCourse = () => {
             loadCourseList()
             adding.value = false
           },
-          // 失败回调
           (message) => {
-            console.error('❌ 添加课程请求失败，错误信息:', message)
-
-            // 详细记录错误信息
-            console.error('❌ 错误详情:', {
-              message: message,
-              type: typeof message,
-              timestamp: new Date().toISOString(),
-              requestData: {
-                name: addForm.name,
-                teacherName: addForm.teacherName,
-                description: addForm.description,
-                duration: addForm.duration,
-                maxCheckInCount: addForm.maxCheckInCount
-              }
-            })
-
-            // 尝试解析错误信息
             let errorMsg = '添加失败'
             if (typeof message === 'string') {
               errorMsg = message
@@ -520,17 +495,6 @@ const handleAddCourse = () => {
           }
       )
     } else {
-      console.log('❌ 表单验证失败，请检查输入')
-
-      // 记录表单验证错误
-      const errors = addFormRef.value?.fields?.reduce((acc, field) => {
-        if (field.validateState === 'error') {
-          acc[field.prop] = field.validateMessage
-        }
-        return acc
-      }, {})
-
-      console.log('❌ 表单验证错误详情:', errors)
       ElMessage.warning('请填写完整的课程信息')
     }
   })
@@ -546,21 +510,20 @@ const handleEdit = (course) => {
   editForm.studentsCount = course.studentsCount || 0
   editForm.maxCheckInCount = course.maxCheckInCount
   editForm.coverImage = course.coverImage || ''
-  editForm.videoUrl = course.videoUrl || ''
-  // 加载课程详情
-  get('/api/admin/course/detail?courseId=' + course.id, data => {
-    editForm.objectives = data?.objectives || ''
-    editForm.outline = data?.outline || ''
-    editForm.requirements = data?.requirements || ''
-    editForm.audience = data?.audience || ''
-    editForm.materials = data?.materials || ''
-  }, () => {
-    editForm.objectives = ''
-    editForm.outline = ''
-    editForm.requirements = ''
-    editForm.audience = ''
-    editForm.materials = ''
-  })
+
+  // 加载课程章节
+  get('/api/admin/course/' + course.id + '/chapters',
+    (data) => {
+      editForm.chapters = (data || []).map(c => ({
+        title: c.title || '',
+        videoUrl: c.videoUrl || ''
+      }))
+    },
+    () => {
+      editForm.chapters = []
+    }
+  )
+
   showEditDialog.value = true
 }
 
@@ -571,10 +534,6 @@ const handleUpdateCourse = () => {
     if (valid) {
       editing.value = true
 
-      console.log('🔄 开始更新课程:', {
-        ...editForm
-      })
-
       post('/api/admin/course/update', {
             id: editForm.id,
             name: editForm.name,
@@ -583,29 +542,20 @@ const handleUpdateCourse = () => {
             duration: editForm.duration,
             studentsCount: editForm.studentsCount,
             maxCheckInCount: editForm.maxCheckInCount,
-            objectives: editForm.objectives,
-            outline: editForm.outline,
-            requirements: editForm.requirements,
-            audience: editForm.audience,
-            materials: editForm.materials,
             coverImage: editForm.coverImage,
-            videoUrl: editForm.videoUrl
+            chaptersJson: JSON.stringify(editForm.chapters)
           },
           (message) => {
-            console.log('✅ 更新课程成功:', message)
             ElMessage.success(message)
             handleCloseEditDialog()
             loadCourseList()
             editing.value = false
           },
           (message) => {
-            console.error('❌ 更新课程失败:', message)
             ElMessage.error(message || '更新失败')
             editing.value = false
           }
       )
-    } else {
-      console.log('❌ 表单验证失败')
     }
   })
 }
@@ -628,16 +578,12 @@ const handleCloseDialog = () => {
     addForm.description = ''
     addForm.duration = ''
     addForm.maxCheckInCount = 12
-    addForm.objectives = ''
-    addForm.outline = ''
-    addForm.requirements = ''
-    addForm.audience = ''
-    addForm.materials = ''
+    addForm.chapters = []
     addForm.coverImage = ''
-    addForm.videoUrl = ''
   }
 }
 
+// 关闭编辑弹窗
 const handleCloseEditDialog = () => {
   showEditDialog.value = false
   if (editFormRef.value) {
@@ -650,20 +596,29 @@ const handleCloseEditDialog = () => {
     editForm.duration = ''
     editForm.studentsCount = 0
     editForm.maxCheckInCount = 12
-    editForm.objectives = ''
-    editForm.outline = ''
-    editForm.requirements = ''
-    editForm.audience = ''
-    editForm.materials = ''
+    editForm.chapters = []
     editForm.coverImage = ''
-    editForm.videoUrl = ''
   }
 }
 
 // 生命周期
 onMounted(async () => {
-  const isLoggedIn = await checkAdminLogin()
-  if (!isLoggedIn) {
+  // 尝试从 localStorage 恢复管理员状态
+  try {
+    const adminAuth = localStorage.getItem('admin_auth')
+    if (adminAuth) {
+      const adminInfo = JSON.parse(adminAuth)
+      // 设置到 store 中供其他组件使用
+      const store = useStore()
+      store.auth.admin = adminInfo
+    }
+  } catch (e) {
+    localStorage.removeItem('admin_auth')
+  }
+
+  // 检查是否已登录
+  const adminAuth = localStorage.getItem('admin_auth')
+  if (!adminAuth) {
     ElMessage.warning('请先登录管理员账户')
     router.push('/admin-login')
     return
@@ -942,4 +897,74 @@ onUnmounted(() => {
 .pg-btn.active { background: rgba(29,29,31,0.88); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.22); }
 .pg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .pg-dots { color: #86868b; font-size: 14px; padding: 0 2px; }
+
+/* ── Chapters Section ── */
+.chapters-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.chapters-empty {
+  text-align: center;
+  padding: 24px;
+  color: #86868b;
+  font-size: 13px;
+  background: rgba(0,0,0,0.02);
+  border-radius: 10px;
+  border: 1px dashed rgba(0,0,0,0.1);
+}
+.chapter-row {
+  padding: 16px;
+  background: rgba(0,0,0,0.02);
+  border-radius: 12px;
+  border: 0.5px solid rgba(0,0,0,0.06);
+}
+.chapter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.chapter-num {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+.btn-remove-chapter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255,59,48,0.08);
+  color: #ff3b30;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-remove-chapter:hover {
+  background: rgba(255,59,48,0.15);
+}
+.btn-add-chapter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  border: 1px dashed rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.02);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-add-chapter:hover {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.3);
+  color: #1d1d1f;
+}
 </style>

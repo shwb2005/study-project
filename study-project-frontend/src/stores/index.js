@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { reactive } from "vue";
 
@@ -7,6 +7,8 @@ export const useStore = defineStore('store', () => {
     user: null,
     admin: null
   })
+
+  const initialized = ref(false)
 
   const loginPassword = reactive({
     isTyping: false,
@@ -20,5 +22,5 @@ export const useStore = defineStore('store', () => {
     loginPassword.showPassword = false
   }
 
-  return { auth, loginPassword, resetLoginPassword }
+  return { auth, initialized, loginPassword, resetLoginPassword }
 })

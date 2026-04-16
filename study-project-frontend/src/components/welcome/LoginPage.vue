@@ -80,7 +80,6 @@ const login = () => {
   }, (error) => {
     loading.login = false
     store.resetLoginPassword()
-    console.error('登录失败:', error)
     ElMessage.error(error || '登录失败，请检查用户名和密码')
   })
 }

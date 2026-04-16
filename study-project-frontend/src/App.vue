@@ -1,7 +1,7 @@
 <script setup>
 import { get } from "@/net";
 import { useStore } from "@/stores/index.js";
-import { reactive } from "vue";
+import { onMounted } from "vue";
 import router from "@/router/index.js";
 import { useRoute } from "vue-router";
 
@@ -10,9 +10,6 @@ const route = useRoute()
 
 // Tab 顺序，用于判断切换方向
 const tabOrder = ['/profile', '/courses', '/announcements', '/study-plan']
-
-// 上一次访问的 tab 索引
-let lastTabIndex = -1
 
 // 路由切换时判断方向并设置 transition
 router.beforeEach((to, from) => {
@@ -25,14 +22,31 @@ router.beforeEach((to, from) => {
   }
 })
 
-if (store.auth.user == null) {
-  get('/api/user/me', (message) => {
-    store.auth.user = message
-    router.push('/index')
-  }, () => {
-    store.auth.user = null
-  })
-}
+// 在应用启动时恢复登录状态
+onMounted(() => {
+  // 尝试从 localStorage 恢复管理员登录状态
+  try {
+    const adminAuth = localStorage.getItem('admin_auth')
+    if (adminAuth) {
+      store.auth.admin = JSON.parse(adminAuth)
+    }
+  } catch (e) {
+    localStorage.removeItem('admin_auth')
+  }
+
+  // 只在非管理员页面检查普通用户登录状态
+  if (!route.path.startsWith('/admin') && store.auth.user === null) {
+    get('/api/user/me', (message) => {
+      store.auth.user = message
+      store.initialized = true
+    }, () => {
+      store.auth.user = null
+      store.initialized = true
+    })
+  } else {
+    store.initialized = true
+  }
+})
 </script>
 
 <template>
@@ -50,7 +64,6 @@ if (store.auth.user == null) {
 .slide-right-leave-active {
   transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .slide-left-enter-from {
   opacity: 0;
   transform: translateX(28px);
@@ -59,16 +72,14 @@ if (store.auth.user == null) {
   opacity: 0;
   transform: translateX(-28px);
 }
-
 .slide-right-enter-from {
   opacity: 0;
   transform: translateX(-28px);
 }
 .slide-right-leave-to {
   opacity: 0;
-  transform: translateX(28px);
+  transform: translateX(-28px);
 }
-
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.25s ease;

@@ -119,34 +119,18 @@ public class AuthorizeServiceImpl implements AuthorizeService {
                     int result = mapper.createAccount(account);
 
                     if(result > 0){
-                        // 获取新用户的ID
                         Integer newUserId = account.getId();
-                        System.out.println("=== 新用户注册成功，用户ID: " + newUserId + " ===");
-
                         if (newUserId != null) {
-                            // 【关键】初始化用户档案
-                            boolean profileInitialized = userProfileService.initializeUserProfile(newUserId);
-                            System.out.println("用户档案初始化结果: " + profileInitialized);
-
-                            if (profileInitialized) {
-                                System.out.println("✅ 用户档案创建成功");
-                            } else {
-                                System.out.println("❌ 用户档案创建失败");
-                                // 这里可以记录日志，但不回滚事务，因为用户注册主要功能已完成
-                            }
-
-                            // 删除Redis中的验证码
+                            userProfileService.initializeUserProfile(newUserId);
                             template.delete(key);
                             return null;
                         } else {
-                            System.out.println("错误：无法获取新用户的ID");
                             return "注册失败，无法获取用户ID";
                         }
                     } else {
                         return "内部错误，联系管理员";
                     }
                 } catch (Exception e) {
-                    System.out.println("注册异常: " + e.getMessage());
                     e.printStackTrace();
                     return "注册失败，请联系管理员";
                 }

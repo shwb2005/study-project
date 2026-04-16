@@ -29,7 +29,7 @@ onMounted(() => {
       form.password = adminInfo.password || ''
       form.remember = true
     } catch (e) {
-      console.error('解析记住的管理员信息失败:', e)
+      localStorage.removeItem('remembered_admin')
     }
   }
 })
@@ -72,8 +72,8 @@ const login = () => {
             password: form.password
           }
           localStorage.setItem('remembered_admin', JSON.stringify(rememberedInfo))
-        } catch (error) {
-          console.error('保存管理员凭据失败:', error)
+        } catch (e) {
+          localStorage.removeItem('remembered_admin')
         }
       } else {
         localStorage.removeItem('remembered_admin')
@@ -81,8 +81,8 @@ const login = () => {
 
       try {
         localStorage.setItem('admin_auth', JSON.stringify(adminAuth))
-      } catch (error) {
-        console.error('保存到 localStorage 失败:', error)
+      } catch (e) {
+        // 静默处理 localStorage 错误
       }
 
       ElMessage.success('登录成功')
@@ -94,8 +94,7 @@ const login = () => {
   }, (message) => {
     ElMessage.error('登录失败: ' + message)
     loading.value = false
-  }, (error) => {
-    console.error('请求失败:', error)
+  }, () => {
     ElMessage.error('请求失败，请检查网络连接')
     loading.value = false
   })

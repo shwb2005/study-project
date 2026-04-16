@@ -139,6 +139,7 @@ const goBack = () => {
 
 const logout = () => {
   store.auth.admin = null
+  localStorage.removeItem('admin_auth')
   ElMessage.success("已退出管理员登录")
   router.push('/admin-login')
 }

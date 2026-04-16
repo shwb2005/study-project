@@ -135,16 +135,11 @@ public class SecurityConfiguration {
                 // 根据用户名查找用户信息
                 Account account = userMapper.findAccountByUsername(username);
                 if (account != null) {
-                    // 调用更新最后登录时间的方法
                     userProfileService.updateLastLoginTime(account.getId());
                     activityLogService.log(account.getId(), "登录系统", "登录了系统");
-                    System.out.println("=== 更新最后登录时间成功 ===");
-                    System.out.println("用户ID: " + account.getId());
-                    System.out.println("用户名: " + username);
                 }
             }
         } catch (Exception e) {
-            System.err.println("更新最后登录时间失败: " + e.getMessage());
             // 不抛出异常，不影响登录流程
         }
 

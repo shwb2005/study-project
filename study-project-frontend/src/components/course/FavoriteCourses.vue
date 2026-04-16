@@ -142,7 +142,6 @@ const pollingLoop = async () => {
     await Promise.all([loadFavorites(), loadMyCourses()])
     pollingTimer = setTimeout(pollingLoop, NORMAL_INTERVAL)
   } catch (error) {
-    console.error('轮询失败，10秒后重试', error)
     pollingTimer = setTimeout(pollingLoop, ERROR_PAUSE_INTERVAL)
   }
 }

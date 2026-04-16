@@ -28,6 +28,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
         }
 
         Admin admin = (Admin) request.getSession().getAttribute("admin");
+
         if (admin == null || admin.getRole() == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=utf-8");
@@ -40,7 +41,9 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
         }
 
         String requiredModule = annotation.value();
-        if (!ModuleRoleMapping.hasAccess(requiredModule, admin.getRole())) {
+        boolean hasAccess = ModuleRoleMapping.hasAccess(requiredModule, admin.getRole());
+
+        if (!hasAccess) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json;charset=utf-8");
             response.getWriter().write(JSONObject.toJSONString(RestBean.failure(403, "权限不足，无法访问该模块")));

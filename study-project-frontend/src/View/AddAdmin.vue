@@ -256,21 +256,7 @@ const formatDate = (dateString) => {
 
 // 返回首页
 const goToHome = () => {
-  console.log('🏠 返回首页')
   router.push('/admin')
-}
-
-// 检查登录状态
-const checkAdminLogin = () => {
-  return new Promise((resolve) => {
-    if (store.auth.admin) {
-      console.log('Store 中已有管理员登录状态')
-      resolve(true)
-    } else {
-      console.log('Store 中无管理员登录状态')
-      resolve(false)
-    }
-  })
 }
 
 // 加载管理员列表
@@ -278,7 +264,6 @@ const loadAdminList = () => {
   loading.value = true
   get('/api/admin/list',
       (message) => {
-        console.log('获取管理员列表成功:', message)
         if (message && message.data) {
           adminList.value = message.data
         } else if (Array.isArray(message)) {
@@ -304,31 +289,22 @@ const handleAddAdmin = () => {
     if (valid) {
       adding.value = true
 
-      console.log('🔄 开始添加管理员:', {
-        username: addForm.username,
-        password: addForm.password
-      })
-
       post('/api/admin/add', {
             username: addForm.username,
             password: addForm.password,
             role: addForm.role
           },
           (message) => {
-            console.log('✅ 添加管理员成功:', message)
             ElMessage.success(message)
             handleCloseDialog()
             loadAdminList()
             adding.value = false
           },
           (message) => {
-            console.error('❌ 添加管理员失败:', message)
             ElMessage.error(message || '添加失败')
             adding.value = false
           }
       )
-    } else {
-      console.log('❌ 表单验证失败')
     }
   })
 }
@@ -391,19 +367,26 @@ const getCurrentAdmin = () => {
       (message) => {
         if (message && (message.id || message.data?.id)) {
           currentAdminId.value = message.id || message.data.id
-          console.log('当前登录管理员ID:', currentAdminId.value)
         }
-      },
-      (message) => {
-        console.log('获取当前管理员信息失败:', message)
       }
   )
 }
 
 // 生命周期
 onMounted(async () => {
-  const isLoggedIn = await checkAdminLogin()
-  if (!isLoggedIn) {
+  // 尝试从 localStorage 恢复管理员状态
+  if (!store.auth.admin) {
+    try {
+      const adminAuth = localStorage.getItem('admin_auth')
+      if (adminAuth) {
+        store.auth.admin = JSON.parse(adminAuth)
+      }
+    } catch (e) {
+      localStorage.removeItem('admin_auth')
+    }
+  }
+
+  if (!store.auth.admin) {
     ElMessage.warning('请先登录管理员账户')
     router.push('/admin-login')
     return
@@ -554,31 +537,31 @@ onUnmounted(() => {
 .stat-sep { width: 0.5px; height: 28px; background: rgba(0,0,0,0.08); }
 
 /* ── Footer buttons ── */
-.card-footer { display: flex; flex-direction: column; gap: 8px; }
+.card-footer { display: flex; flex-direction: row; gap: 8px; }
 .btn-edit-full {
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  width: 100%; padding: 11px;
-  background: rgba(0,113,227,0.08);
-  backdrop-filter: blur(8px); color: #0071e3;
-  border: 0.5px solid rgba(0,113,227,0.2);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  flex: 1; padding: 10px;
+  background: rgba(250,248,245,0.85);
+  backdrop-filter: blur(12px); color: #3a3a3c;
+  border: 0.5px solid rgba(200,195,185,0.5);
   border-radius: 10px;
   font-size: 13px; font-weight: 600; cursor: pointer;
   font-family: inherit; transition: all 0.15s;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset;
+  box-shadow: 0 2px 8px rgba(180,175,165,0.12);
 }
-.btn-edit-full:hover { background: rgba(0,113,227,0.15); transform: translateY(-1px); }
+.btn-edit-full:hover { background: rgba(248,245,240,0.95); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(180,175,165,0.18); }
 .btn-danger-full {
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  width: 100%; padding: 11px;
-  background: rgba(255,59,48,0.08);
-  backdrop-filter: blur(8px); color: #ff3b30;
-  border: 0.5px solid rgba(255,59,48,0.2);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  flex: 1; padding: 10px;
+  background: rgba(252,250,248,0.85);
+  backdrop-filter: blur(12px); color: #3a3a3c;
+  border: 0.5px solid rgba(200,195,185,0.5);
   border-radius: 10px;
   font-size: 13px; font-weight: 600; cursor: pointer;
   font-family: inherit; transition: all 0.15s;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset;
+  box-shadow: 0 2px 8px rgba(180,175,165,0.12);
 }
-.btn-danger-full:hover { background: rgba(255,59,48,0.15); transform: translateY(-1px); }
+.btn-danger-full:hover { background: rgba(255,252,248,0.95); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(180,175,165,0.18); }
 
 .self-indicator {
   display: flex; align-items: center; justify-content: center; gap: 7px;

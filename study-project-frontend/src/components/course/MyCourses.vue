@@ -195,11 +195,11 @@ onMounted(() => {
             {{ getCheckInButtonText(relation) }}
           </button>
           <div class="btn-row">
-            <button class="btn btn-detail" @click="router.push('/course/' + relation.courseId)">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" width="13" height="13">
-                <path d="M4 6h16M4 12h16M4 18h10" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <button class="btn btn-learn" @click="router.push('/course/' + relation.courseId)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14">
+                <polygon points="5 3 19 12 5 21 5 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              详情
+              去学习
             </button>
             <button class="btn btn-ghost" @click="openRatingDialog(relation, relation.rating > 0)">
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" width="13" height="13">
@@ -524,18 +524,19 @@ onMounted(() => {
   transform: none !important;
 }
 
-.btn-detail {
+.btn-learn {
   flex: 1;
-  background: rgba(0, 113, 227, 0.08);
+  background: rgba(29,29,31,0.72);
   backdrop-filter: blur(12px);
-  color: #0071e3;
-  border: 0.5px solid rgba(0, 113, 227, 0.2);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  color: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-.btn-detail:hover {
-  background: rgba(0, 113, 227, 0.14);
+.btn-learn:hover {
+  background: rgba(0,0,0,0.82);
   transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.22);
 }
 
 .btn-ghost {
