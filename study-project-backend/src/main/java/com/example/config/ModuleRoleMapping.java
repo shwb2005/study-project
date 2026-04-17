@@ -1,6 +1,6 @@
 package com.example.config;
 
-import com.example.entity.user.AdminRole;
+import com.example.entity.admin.AdminRole;
 
 import java.util.HashMap;
 import java.util.Map;

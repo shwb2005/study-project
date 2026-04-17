@@ -15,89 +15,89 @@ const router = createRouter({
     {
       path: '/',
       name: 'welcome',
-      component: () => import('@/view/WelcomeView.vue'),
+      component: () => import('@/View/user/welcome/WelcomeView.vue'),
       children: [
         {
           path: '',
           name: 'welcome-login',
-          component: () => import('@/components/welcome/LoginPage.vue')
+          component: () => import('@/View/user/welcome/LoginPage.vue')
         }, {
           path: 'register',
           name: 'welcome-register',
-          component: () => import('@/components/welcome/RegisterPage.vue')
+          component: () => import('@/View/user/welcome/RegisterPage.vue')
         },
         {
           path: 'forget',
           name: 'welcome-forget',
-          component: () => import('@/components/welcome/ForgetPage.vue')
+          component: () => import('@/View/user/welcome/ForgetPage.vue')
         },
         // 添加管理员登录路由
         {
           path: 'admin-login',
           name: 'welcome-admin-login',
-          component: () => import('@/components/welcome/AdminLoginPage.vue')
+          component: () => import('@/View/admin/AdminLoginPage.vue')
         }
       ]
     },
     {
       path: '/index',
       name: 'index',
-      component: () => import('@/view/IndexView.vue')
+      component: () => import('@/View/user/home/IndexView.vue')
     },
     {
       path: '/courses',
       name: 'courses',
-      component: () => import('@/view/CoursePage.vue')
+      component: () => import('@/View/user/course/CoursePage.vue')
     },
     {
       path: '/course/:id',
       name: 'course-detail',
-      component: () => import('@/view/CourseDetail.vue')
+      component: () => import('@/View/user/course/CourseDetail.vue')
     },
     {
       path: '/profile',
       name: 'profile',
-      component: () => import('@/view/ProfilePage.vue')
+      component: () => import('@/View/user/profile/ProfilePage.vue')
     },
     {
       path: '/announcements',
       name: 'announcements',
-      component: () => import('@/view/AnnouncementPage.vue')
+      component: () => import('@/View/user/announcement/AnnouncementPage.vue')
     },
     {
       path: '/study-plan',
       name: 'study-plan',
-      component: () => import('@/view/StudyPlanPage.vue')
+      component: () => import('@/View/user/study/StudyPlanPage.vue')
     },
     // 添加管理员路由
     {
       path: '/admin',
       name: 'admin',
-      component: () => import('@/view/AdminView.vue'),
+      component: () => import('@/View/admin/AdminView.vue'),
       meta: { requiresAdmin: true }
     },
     {
       path: '/add-admin',
       name: 'AddAdmin',
-      component: () => import('@/view/AddAdmin.vue'),
+      component: () => import('@/View/admin/AddAdmin.vue'),
       meta: { requiresAdmin: true }  // 添加管理员权限要求
     },
     {
       path: '/add-course',
       name: 'AddCourse',
-      component: () => import('@/view/AddCourse.vue'),
+      component: () => import('@/View/admin/AddCourse.vue'),
       meta: { requiresAdmin: true }  // 添加管理员权限要求
     },
     {
       path: '/admin-community',
       name: 'AdminCommunity',
-      component: () => import('@/view/AdminCommunity.vue'),
+      component: () => import('@/View/admin/AdminCommunity.vue'),
       meta: { requiresAdmin: true }
     },
     {
       path: '/admin-announcement',
       name: 'AdminAnnouncement',
-      component: () => import('@/view/AdminAnnouncement.vue'),
+      component: () => import('@/View/admin/AdminAnnouncement.vue'),
       meta: { requiresAdmin: true }
     },
     {

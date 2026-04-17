@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.example.annotation.RequireModule;
 import com.example.config.ModuleRoleMapping;
 import com.example.entity.RestBean;
-import com.example.entity.user.Admin;
+import com.example.entity.admin.Admin;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
